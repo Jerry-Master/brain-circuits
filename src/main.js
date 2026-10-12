@@ -28,7 +28,8 @@ const container = document.getElementById('brain-view');
 
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const coarse = matchMedia('(pointer: coarse)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio, coarse ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -49,6 +50,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enableZoom = false; // wheel is reserved for the exploded view
 controls.autoRotateSpeed = 0.6;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.PAN }; // pinch handled below
 
 scene.add(new THREE.HemisphereLight('#c6d4ff', '#1a1208', 1.3));
 const key = new THREE.DirectionalLight('#ffffff', 2.2);
@@ -263,6 +265,40 @@ renderer.domElement.addEventListener(
   { passive: false },
 );
 
+// touch: pinch zooms (OrbitControls still pans with two fingers), tap shows the tooltip
+const touches = new Map();
+let pinchDist = 0;
+let tapStart = null;
+const spread = () => {
+  const [a, b] = [...touches.values()];
+  return Math.hypot(a.x - b.x, a.y - b.y);
+};
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') return;
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  tapStart = touches.size === 1 ? { x: e.clientX, y: e.clientY, t: performance.now() } : null;
+  if (touches.size === 2) pinchDist = spread();
+});
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (!touches.has(e.pointerId)) return;
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (touches.size === 2) {
+    const d = spread();
+    if (pinchDist > 0) app.setZoom(state.zoom * (d / pinchDist));
+    pinchDist = d;
+  }
+});
+const endTouch = (e) => {
+  if (!touches.delete(e.pointerId)) return;
+  if (touches.size < 2) pinchDist = 0;
+  if (e.type === 'pointerup' && tapStart && Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y) < 8 && performance.now() - tapStart.t < 400) {
+    pointerEvent = e;
+  }
+  tapStart = null;
+};
+renderer.domElement.addEventListener('pointerup', endTouch);
+renderer.domElement.addEventListener('pointercancel', endTouch);
+
 const sequence = { get playing() { return app.sequence.playing; }, set playing(v) { for (const b of Object.values(built)) b.sequence.playing = v; } };
 const playBtn = document.getElementById('btn-play');
 const playIcon = document.getElementById('play-icon');
@@ -273,11 +309,24 @@ playBtn.addEventListener('click', () => {
 });
 document.getElementById('btn-step').addEventListener('click', () => app.sequence.next());
 
+const hudEl = document.getElementById('hud');
+const hudBtn = document.getElementById('btn-hud');
+hudBtn.addEventListener('click', () => {
+  hudEl.classList.toggle('min');
+  hudBtn.textContent = hudEl.classList.contains('min') ? '+' : '–';
+});
+if (matchMedia('(max-width: 760px), (max-height: 500px)').matches) hudBtn.click();
+
 const togglePanel = () => {
   panel.classList.toggle('collapsed');
   document.getElementById('btn-collapse').textContent = panel.classList.contains('collapsed') ? '+' : '–';
 };
 document.getElementById('btn-collapse').addEventListener('click', togglePanel);
+
+document.getElementById('tt-explode').addEventListener('click', () => exploder.nudge(-250));
+document.getElementById('tt-collapse').addEventListener('click', () => exploder.nudge(250));
+document.getElementById('tt-reset').addEventListener('click', () => exploder.reset());
+document.getElementById('tt-labels').addEventListener('click', () => (state.labels = !state.labels));
 
 addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, select, textarea')) return;
@@ -296,8 +345,11 @@ const tooltip = document.getElementById('tooltip');
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let pointerEvent = null;
-renderer.domElement.addEventListener('pointermove', (e) => (pointerEvent = e));
-renderer.domElement.addEventListener('pointerleave', () => {
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'touch') pointerEvent = e;
+});
+renderer.domElement.addEventListener('pointerleave', (e) => {
+  if (e.pointerType === 'touch') return;
   pointerEvent = null;
   tooltip.hidden = true;
 });
@@ -316,18 +368,21 @@ function updateTooltip() {
   }
   const { meta } = hit.object.userData.structure;
   tooltip.innerHTML = `<b style="color:${meta.color}">${meta.label}</b><span class="eyebrow">${meta.hemisphere === 'L' ? 'left' : 'right'} hemisphere</span><br>${app.def.structures[meta.base]?.role ?? 'Whole-brain surface. Wheel to split the hemispheres.'}`;
-  tooltip.style.left = `${Math.min(e.clientX + 14, innerWidth - 320)}px`;
-  tooltip.style.top = `${e.clientY + 14}px`;
   tooltip.hidden = false;
+  tooltip.style.left = `${Math.max(8, Math.min(e.clientX + 14, innerWidth - tooltip.offsetWidth - 8))}px`;
+  tooltip.style.top = `${Math.max(8, Math.min(e.clientY + 14, innerHeight - tooltip.offsetHeight - 8))}px`;
 }
 
-addEventListener('resize', () => {
+const onResize = () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   labelRenderer.setSize(innerWidth, innerHeight);
-});
+};
+addEventListener('resize', onResize);
+addEventListener('orientationchange', onResize);
+visualViewport?.addEventListener('resize', onResize);
 
 // ---------- loop ----------
 const timer = new THREE.Timer();

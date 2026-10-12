@@ -25,7 +25,7 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
 
 #brain-view { position: fixed; inset: 0; }
-#brain-view canvas { display: block; }
+#brain-view canvas { display: block; touch-action: none; }
 
 button {
   font: 500 11.5px var(--mono);
@@ -185,12 +185,18 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
   position: fixed;
   left: 16px;
   bottom: 12px;
-  max-width: calc(100vw - 640px);
+  max-width: max(260px, calc(100vw - 640px));
   font: 400 11px/1.6 var(--mono);
   color: var(--muted);
   z-index: 4;
 }
 #hint b { color: var(--text); font-weight: 500; }
+
+#hint-touch { display: none; }
+#hint-touch, #touch-tools { position: fixed; z-index: 4; }
+
+#btn-hud { display: none; }
+#touch-tools { display: none; }
 
 #tooltip {
   position: fixed;
@@ -290,7 +296,7 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
 #scope { display: block; width: 100%; height: 200px; border-top: 1px solid var(--hair); }
 
 /* ---------- lil-gui ---------- */
-.lil-gui.root {
+.lil-gui.lil-root {
   z-index: 7;
   --font-family: var(--sans);
   --font-size: 12px;
@@ -313,8 +319,8 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
   backdrop-filter: blur(14px);
   border: 1px solid var(--hair);
 }
-.lil-gui .title { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; }
-.lil-gui .controller .name { overflow: hidden; text-overflow: ellipsis; }
+.lil-gui .lil-title { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; }
+.lil-gui .lil-controller .lil-name { overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 900px) {
   #hud { width: 300px; }
@@ -337,7 +343,7 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
   border: 1px solid var(--hair);
   border-radius: 999px;
   backdrop-filter: blur(14px) saturate(1.2);
-  z-index: 6;
+  z-index: 8;
 }
 #tabs button { border: none; padding: 6px 14px; color: var(--muted); }
 #tabs button kbd { font: inherit; opacity: 0.45; margin-right: 6px; }
@@ -356,7 +362,140 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
 
 .sw.ne { background: #9cff6e; box-shadow: 0 0 6px #9cff6e; }
 #key .note { flex-basis: 100%; opacity: 0.8; }
-@media (max-width: 760px) {
-  #tabs { top: auto; bottom: 16px; }
-}
 #neuron-panel[hidden] { display: none; }
+
+/* ---------- touch / phone ---------- */
+@media (pointer: coarse) {
+  #hint { display: none; }
+  #touch-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    right: calc(10px + env(safe-area-inset-right));
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  #touch-tools button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    font-size: 15px;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+  }
+  #transport button { padding: 10px; }
+  #pips button { height: 28px; }
+  #pips button::before, #pips button i { top: 13px; }
+}
+
+/* tabs and the lil-gui panel share the top edge: below ~1000px they collide */
+@media (max-width: 1000px) {
+  .lil-gui.lil-root { top: calc(58px + env(safe-area-inset-top)) !important; max-height: calc(100vh - 74px); overflow-y: auto; }
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  #tabs {
+    top: calc(8px + env(safe-area-inset-top));
+    left: 8px;
+    right: 8px;
+    transform: none;
+    justify-content: center;
+  }
+  #tabs button { flex: 1; padding: 7px 6px; font-size: 11px; white-space: nowrap; }
+  #tabs button kbd { display: none; }
+
+  .lil-gui.lil-root {
+    top: calc(58px + env(safe-area-inset-top)) !important;
+    right: 8px !important;
+    width: min(210px, calc(100vw - 190px)) !important; /* leave room for the cellular-view button on the left */
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+
+  #hud {
+    top: auto;
+    left: calc(8px + env(safe-area-inset-left));
+    right: calc(8px + env(safe-area-inset-right));
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    max-height: 46vh;
+    padding: 14px 16px 12px;
+    border-radius: 14px;
+  }
+  #btn-hud {
+    display: block;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 15px;
+  }
+  #hud h1 { font-size: 22px; margin: 4px 40px 8px 0; }
+  #stage-card { gap: 10px; }
+  #loop-ring { width: 104px; height: 104px; }
+  #stage-num { font-size: 40px; height: 38px; }
+  #stage-title { font-size: 19px; margin: 10px 0 6px; min-height: 0; }
+  #stage-desc { font-size: 12.5px; line-height: 1.55; min-height: 0; }
+  #transport { margin-top: 10px; }
+  #key { margin-top: 10px; }
+
+  #hud.min #hud-eyebrow,
+  #hud.min #chips,
+  #hud.min #stage-card,
+  #hud.min #stage-desc,
+  #hud.min #inset,
+  #hud.min #key { display: none; }
+  #hud.min h1 { font-size: 18px; margin-bottom: 2px; }
+  #hud.min #stage-title { font-size: 16px; margin: 4px 40px 0 0; }
+
+  #hint-touch {
+    display: block;
+    left: 0;
+    right: 0;
+    top: calc(52px + env(safe-area-inset-top));
+    text-align: center;
+    font: 400 10px var(--mono);
+    color: var(--muted);
+    pointer-events: none;
+    padding: 0 16px;
+    margin-top: 44px;
+    animation: hint-out 1s 6s forwards;
+  }
+  @keyframes hint-out { to { opacity: 0; visibility: hidden; } }
+  #touch-tools { top: 38%; }
+
+  #neuron-panel {
+    left: calc(8px + env(safe-area-inset-left));
+    right: calc(8px + env(safe-area-inset-right));
+    top: calc(52px + env(safe-area-inset-top));
+    bottom: auto;
+    width: auto;
+    height: 58vh;
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+    resize: none;
+    border-radius: 14px;
+    z-index: 9; /* above the controls panel when expanded */
+  }
+  #neuron-panel.collapsed { right: auto; width: auto; }
+  #neuron-panel.collapsed .panel-head { padding: 8px 10px; }
+  #neuron-panel.collapsed .panel-head .title,
+  #neuron-panel.collapsed #cam-focus { display: none; }
+  .panel-head .title { font-size: 18px; }
+  #scope { height: 130px; }
+  #tooltip { max-width: min(290px, calc(100vw - 16px)); }
+}
+
+@media (max-height: 500px) {
+  /* phone landscape: HUD becomes a side column */
+  #hud { right: auto; width: 300px; top: calc(52px + env(safe-area-inset-top)); max-height: none; }
+  #hud.min { top: auto; }
+  #loop-ring { width: 80px; height: 80px; }
+  #neuron-panel { left: auto; width: 46vw; height: auto; bottom: 8px; }
+  #neuron-panel.collapsed { left: auto; right: 64px; bottom: auto; }
+  #touch-tools { top: 55%; }
+}

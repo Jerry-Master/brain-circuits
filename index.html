@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
     <title>Brain Loops 3D</title>
   </head>
   <body>
@@ -11,6 +11,7 @@
     <nav id="tabs" aria-label="Windows"></nav>
 
     <header id="hud">
+      <button id="btn-hud" title="Collapse / expand" aria-label="Collapse / expand">–</button>
       <div class="eyebrow" id="hud-eyebrow"></div>
       <h1 id="hud-title"></h1>
       <div id="chips"></div>
@@ -40,6 +41,14 @@
       <div id="key"></div>
     </header>
 
+    <div id="touch-tools" aria-label="View controls">
+      <button id="tt-collapse" title="Collapse">⊖</button>
+      <button id="tt-explode" title="Explode">⊕</button>
+      <button id="tt-reset" title="Reset explode">⟲</button>
+      <button id="tt-labels" title="Labels">Aa</button>
+    </div>
+
+    <div id="hint-touch">Drag: rotate · Two fingers: pan · Pinch: zoom · Tap: info</div>
     <div id="hint">
       Drag: rotate · Right-drag: pan · <b>Wheel: explode / collapse</b> · Shift/Ctrl + wheel or pinch: zoom ·
       Space: play/pause · 1/2/3: window · L: labels · E: reset explode · N: neuron panel
