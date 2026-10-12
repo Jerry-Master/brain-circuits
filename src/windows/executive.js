@@ -18,10 +18,10 @@ export const PHASES = [
     from: TRIAL.cueOn,
     to: TRIAL.cueOff + 50,
     msPerSec: 25,
-    title: 'Relevant item · gate opens',
+    title: 'Item + dopamine · gate opens',
     desc: (o) =>
       o.burst
-        ? `A task-relevant item for stripe ${o.A}. SNc bursts with it: phasic dopamine boosts D1 corticostriatal gain, caudate D1 cells silence GPi-${o.A}, MD-${o.A} is released and its kick ignites DLPFC-${o.A}.`
+        ? `An item arrives at stripe ${o.A} together with an SNc dopamine burst: phasic dopamine boosts D1 corticostriatal gain, caudate D1 cells silence GPi-${o.A}, MD-${o.A} is released and its kick ignites DLPFC-${o.A}.`
         : `Item for stripe ${o.A} without a dopamine burst. In this model the item alone still drives caudate D1 hard enough to pause GPi-${o.A}, so the gate opens anyway: the burst is not strictly needed here.`,
   },
   {
@@ -40,9 +40,9 @@ export const PHASES = [
     from: TRIAL.distOn,
     to: TRIAL.distOff + 50,
     msPerSec: 40,
-    title: 'Distractor',
+    title: 'Item without dopamine',
     desc: (o) =>
-      `An irrelevant item in stripe ${o.B} and no dopamine burst. DLPFC-${o.B} follows it only while it is shown; GPi-${o.B} keeps the gate shut, so it is not stored. ACC watches for co-activation of the stripes and, through STN, raises the GPi brake in all of them.`,
+      `An item arrives at stripe ${o.B} with no dopamine burst. DLPFC-${o.B} follows it only while it is shown; GPi-${o.B} keeps the gate shut, so it is not stored. ACC watches for co-activation of the stripes and, through STN, raises the GPi brake in all of them.`,
   },
   {
     key: 'hold',
@@ -61,7 +61,7 @@ export const PHASES = [
     to: TRIAL.length,
     msPerSec: 80,
     title: 'Clear',
-    desc: () => 'End of the trial: the task resets working memory and the tonic GPi brake returns. The next relevant item goes to the other stripe.',
+    desc: () => 'End of the trial: the task resets working memory and the tonic GPi brake returns. Next trial, the item with the dopamine burst goes to the other stripe.',
   },
 ];
 
@@ -70,7 +70,7 @@ function drawInset(g, W, H, m) {
   const t = m.t;
   const A = m.cueStripe;
   const B = m.distStripe;
-  const item = t >= TRIAL.cueOn && t < TRIAL.cueOff ? ['relevant', A, '#ffd166'] : t >= TRIAL.distOn && t < TRIAL.distOff ? ['distractor', B, '#8b95ad'] : null;
+  const item = t >= TRIAL.cueOn && t < TRIAL.cueOff ? ['item + DA', A] : t >= TRIAL.distOn && t < TRIAL.distOff ? ['item', B] : null;
   g.textBaseline = 'middle';
   for (let c = 0; c < 2; c++) {
     const x = 8 + c * (W / 2);
@@ -81,9 +81,9 @@ function drawInset(g, W, H, m) {
     g.font = '11px ui-monospace, monospace';
     g.textAlign = 'center';
     if (item && item[1] === c) {
-      g.fillStyle = item[2];
+      g.fillStyle = '#cfd8ea'; // both items drawn alike: only the dopamine burst tells them apart
       g.font = '600 16px system-ui';
-      g.fillText(item[0] === 'relevant' ? '★' : '◆', x + w / 2 - 30, 19);
+      g.fillText('◆', x + w / 2 - 30, 19);
       g.font = '11px ui-monospace, monospace';
       g.fillText(item[0], x + w / 2 + 14, 19);
     }
@@ -167,14 +167,14 @@ export const executive = {
   inset: { height: 92, draw: drawInset },
 
   structures: {
-    dlpfc: { short: 'DLPFC', name: 'DLPFC', pop: 'dlpfc', role: 'Dorsolateral prefrontal cortex (BA 9/46): holds task-relevant items in persistently active stripes.' },
+    dlpfc: { short: 'DLPFC', name: 'DLPFC', pop: 'dlpfc', role: 'Dorsolateral prefrontal cortex (BA 9/46): holds gated items in persistently active stripes.' },
     acc: { short: 'ACC', name: 'ACC', pop: 'acc', role: 'Anterior cingulate: registers conflict (co-activation of stripes) and drives STN to raise the gating threshold.' },
     caudate: { short: 'Caudate', name: 'Caudate', pop: ['cd1', 'cd2'], color: '#4fc3f7', opacity: 0.9, role: 'Associative striatum (caudate head). Receives DLPFC; its D1 cells open the gate, D2 cells keep it shut.' },
     gpe: { short: 'GPe', name: 'GPe', pop: 'gpe', tonic: true, role: 'Tonically active; inhibits STN. Indirect pathway.' },
     stn: { short: 'STN', name: 'STN', pop: 'stn', tonic: true, role: 'Excites GPi/SNr diffusely; receives ACC (“hold your horses”).' },
     gpi: { short: 'GPi/SNr', name: 'GPi / SNr', pop: 'gpi', tonic: true, role: 'Basal-ganglia output (GPi and SNr reticulata). Tonic inhibition of MD thalamus: the gate.' },
     md: { short: 'MD', name: 'MD thalamus', pop: 'md', role: 'Mediodorsal thalamus: reverberates with DLPFC; when disinhibited it ignites the stripe.' },
-    sn: { short: 'SNc/VTA', name: 'SNc / VTA', pop: 'snc', role: 'Dopamine neurons burst for task-relevant items: phasic dopamine opens the gate (D1 ×(1+λ), D2 ×(1−λ)).' },
+    sn: { short: 'SNc/VTA', name: 'SNc / VTA', pop: 'snc', role: 'Dopamine neurons; here they burst with the first item of each trial (a task input): phasic dopamine opens the gate (D1 ×(1+λ), D2 ×(1−λ)).' },
     thalamus: { short: 'Thalamus', name: 'Thalamus', role: 'Remainder of the thalamus.' },
   },
   channel: (h) => (h === 'L' ? 0 : 1),
@@ -235,7 +235,7 @@ export const executive = {
     folder.add(m, 'dopamine', 0, 0.4, 0.01).name('tonic dopamine λ');
     folder.add(m.P, 'burstOn').name('phasic DA burst').onChange(() => app.onStagesRebuilt());
     folder.add(m.P, 'burst', 0, 1.5, 0.05).name('burst size').onChange(() => app.onStagesRebuilt());
-    folder.add(m.P, 'distractor', 0, 10, 0.1).name('distractor strength');
+    folder.add(m.P, 'distractor', 0, 10, 0.1).name('2nd item strength');
     const names = { direct: 'direct pathway', indirect: 'indirect pathway', md: 'MD → DLPFC', acc: 'ACC → STN' };
     const intact = {};
     for (const [p, n] of Object.entries(names)) {

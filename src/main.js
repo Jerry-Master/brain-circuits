@@ -50,7 +50,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enableZoom = false; // wheel is reserved for the exploded view
 controls.autoRotateSpeed = 0.6;
-controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.PAN }; // pinch handled below
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.PAN }; // two fingers = right-drag
 
 scene.add(new THREE.HemisphereLight('#c6d4ff', '#1a1208', 1.3));
 const key = new THREE.DirectionalLight('#ffffff', 2.2);
@@ -265,36 +265,17 @@ renderer.domElement.addEventListener(
   { passive: false },
 );
 
-// touch: pinch zooms (OrbitControls still pans with two fingers), tap shows the tooltip
-const touches = new Map();
-let pinchDist = 0;
+// touch: tap shows the tooltip (two fingers pan, as right-drag on desktop)
 let tapStart = null;
-const spread = () => {
-  const [a, b] = [...touches.values()];
-  return Math.hypot(a.x - b.x, a.y - b.y);
-};
 renderer.domElement.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'touch') return;
-  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  tapStart = touches.size === 1 ? { x: e.clientX, y: e.clientY, t: performance.now() } : null;
-  if (touches.size === 2) pinchDist = spread();
-});
-renderer.domElement.addEventListener('pointermove', (e) => {
-  if (!touches.has(e.pointerId)) return;
-  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (touches.size === 2) {
-    const d = spread();
-    if (pinchDist > 0) app.setZoom(state.zoom * (d / pinchDist));
-    pinchDist = d;
-  }
+  tapStart = e.isPrimary ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() } : null;
 });
 const endTouch = (e) => {
-  if (!touches.delete(e.pointerId)) return;
-  if (touches.size < 2) pinchDist = 0;
-  if (e.type === 'pointerup' && tapStart && Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y) < 8 && performance.now() - tapStart.t < 400) {
+  if (e.type === 'pointerup' && tapStart?.id === e.pointerId && Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y) < 8 && performance.now() - tapStart.t < 400) {
     pointerEvent = e;
   }
-  tapStart = null;
+  if (tapStart?.id === e.pointerId) tapStart = null;
 };
 renderer.domElement.addEventListener('pointerup', endTouch);
 renderer.domElement.addEventListener('pointercancel', endTouch);
