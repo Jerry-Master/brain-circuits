@@ -17,7 +17,9 @@
 // Dopamine (SNc) is a tonic level lambda that scales corticostriatal efficacy:
 // x(1 + lambda) onto D1 MSNs and x(1 - lambda) onto D2 MSNs (Gurney et al. 2001).
 
-export const DT = 0.1; // ms
+import { Network, DT } from './engine.js';
+
+export { DT };
 export const CHANNELS = ['A', 'B'];
 const NC = CHANNELS.length;
 
@@ -35,9 +37,6 @@ export const POPS = {
   vl: { label: 'VLo', n: 16, form: 'q03', p: { a: 0.02, b: 0.25, c: -65, d: 0.05 }, bias: 3.2, noise: 1.6 },
 };
 export const POP_KEYS = Object.keys(POPS);
-
-const TAU = { glu: 5, gaba: 8 }; // ms, AMPA / GABA_A decay
-const EREV = { glu: 0, gaba: -80 };
 
 // w: total conductance a fully active presynaptic channel population would deliver;
 // divided by the expected number of inputs so it does not depend on population size.
@@ -63,59 +62,11 @@ export const TRIAL = { length: 700, cueOn: 100, cueOff: 450, cueA: 9.3, cueB: 2.
 const RATE_TAU = 15; // ms, smoothing for displayed population rates
 const SNC_BIAS = (lambda) => (lambda < 0.02 ? 0 : 2.2 + 1.8 * lambda); // ~4 Hz at lambda = 0.2, ~7 Hz at 0.4
 
-function mulberry32(seed) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export class Circuit {
+export class Circuit extends Network {
   constructor({ seed = 1, dopamine = 0.2, lesion = {} } = {}) {
-    this.rng = mulberry32(seed);
+    super({ pops: POPS, projections: PROJECTIONS, channels: NC, trialLength: TRIAL.length, seed, rateTau: RATE_TAU });
     this.dopamine = dopamine; // lambda, 0 = depleted (parkinsonian), 0.2 = normal
     this.lesion = { direct: false, indirect: false, hyperdirect: false, ...lesion };
-    this.k = 0; // step within trial
-    this.t = 0; // ms within trial
-    this.trialCount = 0;
-    this.listeners = [];
-
-    this.pops = {};
-    for (const key of POP_KEYS) {
-      const def = POPS[key];
-      const N = def.n * NC;
-      const pop = {
-        key, def, N,
-        v: new Float32Array(N), u: new Float32Array(N),
-        gE: new Float32Array(N), gI: new Float32Array(N),
-        iExt: new Float32Array(NC),
-        spiked: new Uint8Array(N),
-        rate: new Float32Array(NC), // Hz, smoothed
-        bias: new Float32Array(N), // per-neuron tonic current, +/-25 % heterogeneity
-      };
-      for (let i = 0; i < N; i++) {
-        pop.bias[i] = def.bias * (0.75 + 0.5 * this.rng());
-        if (def.form === 'msn') {
-          pop.v[i] = def.p.vr;
-          pop.u[i] = 0;
-        } else {
-          pop.v[i] = -65 + this.rng() * 10;
-          pop.u[i] = def.p.b * pop.v[i];
-        }
-      }
-      this.pops[key] = pop;
-    }
-
-    // ring buffers of spike indices, one per source population, long enough for the longest delay
-    const maxDelay = Math.max(...PROJECTIONS.map((p) => p.delay));
-    this.histLen = Math.ceil(maxDelay / DT) + 2;
-    for (const pop of Object.values(this.pops)) pop.hist = Array.from({ length: this.histLen }, () => []);
-    this.step_ = 0;
-
-    this.projections = PROJECTIONS.map((def) => this.connect(def));
     this.setDopamine(dopamine);
   }
 
@@ -123,26 +74,6 @@ export class Circuit {
     this.dopamine = lambda;
     const p = this.pops.snc;
     for (let i = 0; i < p.N; i++) p.bias[i] = SNC_BIAS(lambda);
-  }
-
-  connect(def) {
-    const src = this.pops[def.from];
-    const dst = this.pops[def.to];
-    const nSrc = src.def.n;
-    const p = 0.5; // connection probability
-    const inputs = (def.topo === 'focal' ? nSrc : nSrc * NC) * p;
-    const targets = [];
-    for (let i = 0; i < src.N; i++) {
-      const ci = Math.floor(i / nSrc);
-      const list = [];
-      for (let j = 0; j < dst.N; j++) {
-        const cj = Math.floor(j / dst.def.n);
-        if (def.topo === 'focal' && ci !== cj) continue;
-        if (this.rng() < p) list.push(j);
-      }
-      targets.push(Int32Array.from(list));
-    }
-    return { def, src, dst, targets, w: def.w / inputs, lag: Math.round(def.delay / DT) };
   }
 
   gain(proj) {
@@ -160,114 +91,8 @@ export class Circuit {
     return ramp * (c === 0 ? TRIAL.cueA : TRIAL.cueB);
   }
 
-  /** advance one DT */
-  step() {
-    const rng = this.rng;
-    const now = this.step_ % this.histLen;
-
-    // deliver delayed spikes
-    for (const pr of this.projections) {
-      const g = this.gain(pr);
-      if (!g) continue;
-      const w = pr.w * g;
-      const slot = (this.step_ - pr.lag + this.histLen * 4) % this.histLen;
-      const spikes = pr.src.hist[slot];
-      const G = pr.def.nt === 'glu' ? pr.dst.gE : pr.dst.gI;
-      for (let s = 0; s < spikes.length; s++) {
-        const tg = pr.targets[spikes[s]];
-        for (let k = 0; k < tg.length; k++) G[tg[k]] += w;
-      }
-    }
-
+  inputs() {
     this.pops.ctx.iExt[0] = this.cue(0);
     this.pops.ctx.iExt[1] = this.cue(1);
-
-    const dE = Math.exp(-DT / TAU.glu);
-    const dI = Math.exp(-DT / TAU.gaba);
-    const sq = Math.sqrt(DT);
-    for (const key of POP_KEYS) {
-      const pop = this.pops[key];
-      const { def, v, u, gE, gI, spiked } = pop;
-      const P = def.p;
-      const hist = pop.hist[now];
-      hist.length = 0;
-      const counts = new Uint16Array(NC);
-      for (let i = 0; i < pop.N; i++) {
-        const c = Math.floor(i / def.n);
-        const vi = v[i];
-        const iSyn = gE[i] * (EREV.glu - vi) + gI[i] * (EREV.gaba - vi);
-        const I = pop.bias[i] + pop.iExt[c] + iSyn;
-        let vn;
-        if (def.form === 'msn') {
-          vn = vi + (DT * (P.k * (vi - P.vr) * (vi - P.vt) - u[i] + I)) / P.C; // pA, nS
-          u[i] += DT * P.a * (P.b * (vi - P.vr) - u[i]);
-        } else {
-          vn = vi + DT * (0.04 * vi * vi + 5 * vi + 140 - u[i] + I);
-          u[i] += DT * P.a * (P.b * vi - u[i]);
-        }
-        vn += def.noise * sq * gauss(rng); // mV / sqrt(ms)
-        const peak = def.form === 'msn' ? P.vpeak : 30;
-        spiked[i] = 0;
-        if (vn >= peak) {
-          vn = P.c;
-          u[i] += P.d;
-          spiked[i] = 1;
-          hist.push(i);
-          counts[c]++;
-        }
-        v[i] = vn < -100 ? -100 : vn;
-        gE[i] *= dE;
-        gI[i] *= dI;
-      }
-      for (let c = 0; c < NC; c++) {
-        const inst = (counts[c] / def.n) * (1000 / DT); // Hz
-        pop.rate[c] += ((inst - pop.rate[c]) * DT) / RATE_TAU;
-      }
-    }
-
-    this.step_++;
-    this.k++;
-    this.t = this.k * DT;
-    if (this.t >= TRIAL.length - DT / 2) {
-      this.k = 0;
-      this.t = 0;
-      this.trialCount++;
-      for (const fn of this.listeners) fn(this.trialCount);
-    }
   }
-
-  /** run for ms of model time; onStep(circuit) is called after every step */
-  run(ms, onStep) {
-    const n = Math.round(ms / DT);
-    for (let i = 0; i < n; i++) {
-      this.step();
-      onStep?.(this);
-    }
-  }
-
-  onTrial(fn) {
-    this.listeners.push(fn);
-  }
-
-  rate(key, c = 0) {
-    return this.pops[key].rate[c];
-  }
-}
-
-let spare = null;
-function gauss(rng) {
-  if (spare !== null) {
-    const s = spare;
-    spare = null;
-    return s;
-  }
-  let u, v, s;
-  do {
-    u = rng() * 2 - 1;
-    v = rng() * 2 - 1;
-    s = u * u + v * v;
-  } while (s >= 1 || s === 0);
-  const m = Math.sqrt((-2 * Math.log(s)) / s);
-  spare = v * m;
-  return u * m;
 }

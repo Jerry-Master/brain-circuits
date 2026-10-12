@@ -497,23 +497,23 @@
    "color": "#9fb7a7",
    "hemisphere": "R",
    "centroid": [
-    11.93,
-    -4.85,
-    3.5
+    11.8,
+    -4.93,
+    0.75
    ],
    "bbox": [
     [
-     -0.3,
-     -20.57,
-     -14.95
+     -0.35,
+     -20.61,
+     -14.89
     ],
     [
-     25.79,
-     10.01,
-     21.64
+     25.76,
+     10.0,
+     21.7
     ]
    ],
-   "voxels": 71517,
+   "voxels": 49203,
    "triangles": 5000
   },
   {
@@ -524,23 +524,23 @@
    "color": "#9fb7a7",
    "hemisphere": "L",
    "centroid": [
-    -12.12,
-    -4.86,
-    3.42
+    -11.95,
+    -4.98,
+    0.64
    ],
    "bbox": [
     [
-     -25.79,
-     -20.61,
-     -14.94
+     -25.69,
+     -20.62,
+     -14.89
     ],
     [
-     -0.2,
-     9.99,
-     21.68
+     -0.18,
+     9.96,
+     21.65
     ]
    ],
-   "voxels": 70967,
+   "voxels": 48653,
    "triangles": 4998
   },
   {
@@ -650,6 +650,546 @@
    ],
    "voxels": 7841,
    "triangles": 3000
+  },
+  {
+   "id": "vis_R",
+   "base": "vis",
+   "label": "Visual cortex (occipital lobe)",
+   "group": "cortex",
+   "color": "#5ad1c8",
+   "hemisphere": "R",
+   "centroid": [
+    22.96,
+    -2.38,
+    -58.58
+   ],
+   "bbox": [
+    [
+     0.21,
+     -30.95,
+     -85.44
+    ],
+    [
+     56.74,
+     38.35,
+     -12.05
+    ]
+   ],
+   "voxels": 493932,
+   "triangles": 11998
+  },
+  {
+   "id": "vis_L",
+   "base": "vis",
+   "label": "Visual cortex (occipital lobe)",
+   "group": "cortex",
+   "color": "#5ad1c8",
+   "hemisphere": "L",
+   "centroid": [
+    -22.83,
+    -2.52,
+    -58.68
+   ],
+   "bbox": [
+    [
+     -56.66,
+     -30.88,
+     -85.42
+    ],
+    [
+     -0.24,
+     38.43,
+     -12.03
+    ]
+   ],
+   "voxels": 493932,
+   "triangles": 11998
+  },
+  {
+   "id": "spl_R",
+   "base": "spl",
+   "label": "Superior parietal lobule / intraparietal sulcus",
+   "group": "cortex",
+   "color": "#26a69a",
+   "hemisphere": "R",
+   "centroid": [
+    25.69,
+    45.87,
+    -36.87
+   ],
+   "bbox": [
+    [
+     6.9,
+     18.8,
+     -63.89
+    ],
+    [
+     46.29,
+     70.88,
+     -14.94
+    ]
+   ],
+   "voxels": 143194,
+   "triangles": 9998
+  },
+  {
+   "id": "spl_L",
+   "base": "spl",
+   "label": "Superior parietal lobule / intraparietal sulcus",
+   "group": "cortex",
+   "color": "#26a69a",
+   "hemisphere": "L",
+   "centroid": [
+    -25.56,
+    45.84,
+    -36.99
+   ],
+   "bbox": [
+    [
+     -46.23,
+     18.84,
+     -63.85
+    ],
+    [
+     -6.92,
+     70.96,
+     -14.88
+    ]
+   ],
+   "voxels": 143194,
+   "triangles": 9998
+  },
+  {
+   "id": "tpj_R",
+   "base": "tpj",
+   "label": "Temporo-parietal junction (approx. supramarginal + angular gyri)",
+   "group": "cortex",
+   "color": "#80cbc4",
+   "hemisphere": "R",
+   "centroid": [
+    50.08,
+    24.73,
+    -29.16
+   ],
+   "bbox": [
+    [
+     27.26,
+     0.08,
+     -60.93
+    ],
+    [
+     70.16,
+     49.59,
+     5.96
+    ]
+   ],
+   "voxels": 282166,
+   "triangles": 10000
+  },
+  {
+   "id": "tpj_L",
+   "base": "tpj",
+   "label": "Temporo-parietal junction (approx. supramarginal + angular gyri)",
+   "group": "cortex",
+   "color": "#80cbc4",
+   "hemisphere": "L",
+   "centroid": [
+    -49.97,
+    24.76,
+    -29.16
+   ],
+   "bbox": [
+    [
+     -70.11,
+     0.11,
+     -60.96
+    ],
+    [
+     -27.25,
+     49.57,
+     6.03
+    ]
+   ],
+   "voxels": 282166,
+   "triangles": 10000
+  },
+  {
+   "id": "fef_R",
+   "base": "fef",
+   "label": "Frontal eye field (approx. caudal MFG, BA6/8)",
+   "group": "cortex",
+   "color": "#4db6ac",
+   "hemisphere": "R",
+   "centroid": [
+    39.12,
+    33.3,
+    33.86
+   ],
+   "bbox": [
+    [
+     21.98,
+     9.67,
+     12.95
+    ],
+    [
+     56.3,
+     56.64,
+     54.22
+    ]
+   ],
+   "voxels": 88578,
+   "triangles": 4998
+  },
+  {
+   "id": "fef_L",
+   "base": "fef",
+   "label": "Frontal eye field (approx. caudal MFG, BA6/8)",
+   "group": "cortex",
+   "color": "#4db6ac",
+   "hemisphere": "L",
+   "centroid": [
+    -39.03,
+    33.26,
+    33.77
+   ],
+   "bbox": [
+    [
+     -56.26,
+     9.66,
+     12.96
+    ],
+    [
+     -22.0,
+     56.55,
+     54.12
+    ]
+   ],
+   "voxels": 88578,
+   "triangles": 4998
+  },
+  {
+   "id": "dlpfc_R",
+   "base": "dlpfc",
+   "label": "Dorsolateral prefrontal cortex (BA9/46, MFG rostral to BA6)",
+   "group": "cortex",
+   "color": "#9575cd",
+   "hemisphere": "R",
+   "centroid": [
+    35.42,
+    17.54,
+    58.92
+   ],
+   "bbox": [
+    [
+     19.73,
+     -15.85,
+     21.39
+    ],
+    [
+     54.29,
+     53.63,
+     87.02
+    ]
+   ],
+   "voxels": 153838,
+   "triangles": 9998
+  },
+  {
+   "id": "dlpfc_L",
+   "base": "dlpfc",
+   "label": "Dorsolateral prefrontal cortex (BA9/46, MFG rostral to BA6)",
+   "group": "cortex",
+   "color": "#9575cd",
+   "hemisphere": "L",
+   "centroid": [
+    -35.52,
+    17.3,
+    59.12
+   ],
+   "bbox": [
+    [
+     -54.3,
+     -15.88,
+     21.39
+    ],
+    [
+     -19.73,
+     53.56,
+     87.0
+    ]
+   ],
+   "voxels": 153838,
+   "triangles": 9998
+  },
+  {
+   "id": "acc_R",
+   "base": "acc",
+   "label": "Anterior cingulate cortex",
+   "group": "cortex",
+   "color": "#ba68c8",
+   "hemisphere": "R",
+   "centroid": [
+    6.33,
+    6.09,
+    46.39
+   ],
+   "bbox": [
+    [
+     0.22,
+     -24.45,
+     19.03
+    ],
+    [
+     15.05,
+     34.08,
+     69.08
+    ]
+   ],
+   "voxels": 67086,
+   "triangles": 7998
+  },
+  {
+   "id": "acc_L",
+   "base": "acc",
+   "label": "Anterior cingulate cortex",
+   "group": "cortex",
+   "color": "#ba68c8",
+   "hemisphere": "L",
+   "centroid": [
+    -6.31,
+    5.77,
+    46.7
+   ],
+   "bbox": [
+    [
+     -15.04,
+     -24.44,
+     19.04
+    ],
+    [
+     -0.22,
+     34.09,
+     69.08
+    ]
+   ],
+   "voxels": 67086,
+   "triangles": 7998
+  },
+  {
+   "id": "pul_R",
+   "base": "pul",
+   "label": "Pulvinar",
+   "group": "thalamus",
+   "color": "#4dd0e1",
+   "hemisphere": "R",
+   "centroid": [
+    15.57,
+    -6.9,
+    -7.83
+   ],
+   "bbox": [
+    [
+     6.24,
+     -15.97,
+     -13.96
+    ],
+    [
+     24.28,
+     1.98,
+     -0.47
+    ]
+   ],
+   "voxels": 13454,
+   "triangles": 2500
+  },
+  {
+   "id": "pul_L",
+   "base": "pul",
+   "label": "Pulvinar",
+   "group": "thalamus",
+   "color": "#4dd0e1",
+   "hemisphere": "L",
+   "centroid": [
+    -15.64,
+    -6.85,
+    -7.81
+   ],
+   "bbox": [
+    [
+     -24.28,
+     -15.97,
+     -13.96
+    ],
+    [
+     -6.22,
+     1.99,
+     -0.5
+    ]
+   ],
+   "voxels": 13454,
+   "triangles": 2500
+  },
+  {
+   "id": "md_R",
+   "base": "md",
+   "label": "Mediodorsal nucleus of thalamus",
+   "group": "thalamus",
+   "color": "#7986cb",
+   "hemisphere": "R",
+   "centroid": [
+    6.0,
+    -2.64,
+    2.67
+   ],
+   "bbox": [
+    [
+     1.74,
+     -9.46,
+     -5.83
+    ],
+    [
+     11.27,
+     3.48,
+     13.09
+    ]
+   ],
+   "voxels": 8860,
+   "triangles": 2500
+  },
+  {
+   "id": "md_L",
+   "base": "md",
+   "label": "Mediodorsal nucleus of thalamus",
+   "group": "thalamus",
+   "color": "#7986cb",
+   "hemisphere": "L",
+   "centroid": [
+    -6.0,
+    -2.68,
+    2.76
+   ],
+   "bbox": [
+    [
+     -11.26,
+     -9.45,
+     -5.84
+    ],
+    [
+     -1.73,
+     3.49,
+     13.12
+    ]
+   ],
+   "voxels": 8860,
+   "triangles": 2500
+  },
+  {
+   "id": "sc_R",
+   "base": "sc",
+   "label": "Superior colliculus",
+   "group": "brainstem",
+   "color": "#00bfa5",
+   "hemisphere": "R",
+   "centroid": [
+    4.69,
+    -14.98,
+    -10.6
+   ],
+   "bbox": [
+    [
+     -0.25,
+     -18.52,
+     -15.43
+    ],
+    [
+     10.53,
+     -10.96,
+     -6.96
+    ]
+   ],
+   "voxels": 2502,
+   "triangles": 1498
+  },
+  {
+   "id": "sc_L",
+   "base": "sc",
+   "label": "Superior colliculus",
+   "group": "brainstem",
+   "color": "#00bfa5",
+   "hemisphere": "L",
+   "centroid": [
+    -4.79,
+    -14.98,
+    -10.63
+   ],
+   "bbox": [
+    [
+     -10.54,
+     -18.5,
+     -15.43
+    ],
+    [
+     -0.23,
+     -10.96,
+     -6.97
+    ]
+   ],
+   "voxels": 2451,
+   "triangles": 1500
+  },
+  {
+   "id": "lc_R",
+   "base": "lc",
+   "label": "Locus coeruleus (approx.: dorsal rostral pontine tegmentum; not in atlas)",
+   "group": "brainstem",
+   "color": "#ff5c8a",
+   "hemisphere": "R",
+   "centroid": [
+    6.42,
+    -29.69,
+    -8.08
+   ],
+   "bbox": [
+    [
+     -0.38,
+     -33.0,
+     -13.02
+    ],
+    [
+     11.25,
+     -25.22,
+     -2.93
+    ]
+   ],
+   "voxels": 3870,
+   "triangles": 798
+  },
+  {
+   "id": "lc_L",
+   "base": "lc",
+   "label": "Locus coeruleus (approx.: dorsal rostral pontine tegmentum; not in atlas)",
+   "group": "brainstem",
+   "color": "#ff5c8a",
+   "hemisphere": "L",
+   "centroid": [
+    -6.67,
+    -29.57,
+    -8.36
+   ],
+   "bbox": [
+    [
+     -11.24,
+     -33.0,
+     -12.97
+    ],
+    [
+     -0.2,
+     -25.22,
+     -2.88
+    ]
+   ],
+   "voxels": 3748,
+   "triangles": 798
   }
  ]
 }

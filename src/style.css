@@ -279,6 +279,7 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
 .panel-head > * { pointer-events: auto; }
 .panel-head .title { font: 400 22px var(--serif); }
 .cam-buttons { display: flex; gap: 4px; }
+#cam-focus { display: contents; }
 .cam-buttons { flex-wrap: wrap; justify-content: flex-end; }
 .cam-buttons button { min-width: 30px; padding: 4px 7px; }
 .cam-buttons button.on { border-color: rgba(243, 217, 164, 0.6); color: var(--accent); }
@@ -322,3 +323,40 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
   #hint { display: none; }
 }
 
+
+/* ---------- windows ---------- */
+#tabs {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  backdrop-filter: blur(14px) saturate(1.2);
+  z-index: 6;
+}
+#tabs button { border: none; padding: 6px 14px; color: var(--muted); }
+#tabs button kbd { font: inherit; opacity: 0.45; margin-right: 6px; }
+#tabs button.on { background: rgba(243, 217, 164, 0.14); color: var(--accent); }
+
+#loop-ring .cluster rect { fill: currentColor; fill-opacity: 0.05; stroke: currentColor; stroke-opacity: 0.25; }
+#loop-ring .cluster text { fill: currentColor; font: 500 7.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+
+#chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+#chips:empty { display: none; }
+#chips button { padding: 3px 9px; font-size: 10.5px; }
+#chips button.on { color: var(--c, var(--accent)); border-color: var(--c, var(--accent)); background: rgba(255, 255, 255, 0.05); }
+
+#inset { display: block; width: 100%; margin-top: 12px; border-radius: 10px; }
+#inset[hidden] { display: none; }
+
+.sw.ne { background: #9cff6e; box-shadow: 0 0 6px #9cff6e; }
+#key .note { flex-basis: 100%; opacity: 0.8; }
+@media (max-width: 760px) {
+  #tabs { top: auto; bottom: 16px; }
+}
+#neuron-panel[hidden] { display: none; }

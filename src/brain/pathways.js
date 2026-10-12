@@ -1,28 +1,10 @@
 import * as THREE from 'three';
 
-// Fibre tracts of the motor loop. src: circuit population whose firing rate
-// drives the tract's spike density. bulge (mm, right hemisphere; x mirrored on
-// the left) bends the curve so tracts follow plausible routes and don't overlap.
-export const TRACTS = [
-  { id: 'm1-putamen', from: 'm1', to: 'putamen', src: 'ctx', nt: 'glu', bulge: [9, -2, 6], name: 'Corticostriatal (M1 → putamen)' },
-  { id: 'pmc-putamen', from: 'pmc', to: 'putamen', src: 'ctx', nt: 'glu', bulge: [9, 0, 6], name: 'Corticostriatal (premotor → putamen)' },
-  { id: 'm1-stn', from: 'm1', to: 'stn', src: 'ctx', nt: 'glu', bulge: [-6, 0, 4], pathway: 'hyperdirect', name: 'Hyperdirect (M1 → STN)' },
-  { id: 'pmc-stn', from: 'pmc', to: 'stn', src: 'ctx', nt: 'glu', bulge: [-8, 2, -2], pathway: 'hyperdirect', name: 'Hyperdirect (premotor → STN)' },
-  { id: 'putamen-gpi', from: 'putamen', to: 'gpi', src: 'd1', nt: 'gaba', bulge: [0, -4, -2], pathway: 'direct', name: 'Striatopallidal, direct (D1 → GPi)' },
-  { id: 'putamen-gpe', from: 'putamen', to: 'gpe', src: 'd2', nt: 'gaba', bulge: [0, 4, 2], pathway: 'indirect', name: 'Striatopallidal, indirect (D2 → GPe)' },
-  { id: 'gpe-stn', from: 'gpe', to: 'stn', src: 'gpe', nt: 'gaba', bulge: [2, 3, 3], pathway: 'indirect', name: 'Pallidosubthalamic (GPe → STN)' },
-  { id: 'stn-gpe', from: 'stn', to: 'gpe', src: 'stn', nt: 'glu', bulge: [5, -3, -3], name: 'Subthalamopallidal (STN → GPe)' },
-  { id: 'gpe-gpi', from: 'gpe', to: 'gpi', src: 'gpe', nt: 'gaba', bulge: [-2, -2, 2], pathway: 'indirect', name: 'Pallidopallidal (GPe → GPi)' },
-  { id: 'stn-gpi', from: 'stn', to: 'gpi', src: 'stn', nt: 'glu', bulge: [3, -4, -3], name: 'Subthalamopallidal (STN → GPi)' },
-  { id: 'gpi-va', from: 'gpi', to: 'va', src: 'gpi', nt: 'gaba', bulge: [-2, -7, 0], name: 'Pallidothalamic (GPi → VA) · ansa lenticularis + lenticular fasciculus → H1' },
-  { id: 'gpi-vl', from: 'gpi', to: 'vl', src: 'gpi', nt: 'gaba', bulge: [-1, 5, -3], name: 'Pallidothalamic (GPi → VLo) · ansa lenticularis + lenticular fasciculus → H1' },
-  { id: 'va-pmc', from: 'va', to: 'pmc', src: 'vl', nt: 'glu', bulge: [-5, 8, -5], name: 'Thalamocortical (VA → premotor)' },
-  { id: 'vl-m1', from: 'vl', to: 'm1', src: 'vl', nt: 'glu', bulge: [-4, 8, -10], name: 'Thalamocortical (VLo → M1)' },
-  { id: 'vl-pmc', from: 'vl', to: 'pmc', src: 'vl', nt: 'glu', bulge: [-6, 10, -7], name: 'Thalamocortical (VLo → premotor / SMA)' },
-  { id: 'sn-putamen', from: 'sn', to: 'putamen', src: 'snc', nt: 'da', bulge: [4, -6, 4], pathway: 'dopamine', name: 'Nigrostriatal (SNc → putamen, dopamine)' },
-];
+// Fibre tracts of a window (see src/windows/*.js). Each tract's spike density
+// follows the firing rate of its source population.
+import { NT_HEX } from '../windows/common.js';
 
-export const NT_COLOR = { glu: new THREE.Color('#ffb347'), gaba: new THREE.Color('#5cc8ff'), da: new THREE.Color('#e17bd6') };
+export const NT_COLOR = Object.fromEntries(Object.entries(NT_HEX).map(([k, v]) => [k, new THREE.Color(v)]));
 
 const MAX_SPIKES = 600;
 const SPIKE_TRAVEL = 0.75; // seconds to traverse a tract
@@ -54,6 +36,7 @@ function makeTractMaterial(color) {
       uActivity: { value: 0 },
       uTime: { value: Math.random() * 10 },
       uLength: { value: 50 },
+      uDim: { value: 1 },
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -69,6 +52,7 @@ function makeTractMaterial(color) {
       uniform float uActivity;
       uniform float uTime;
       uniform float uLength;
+      uniform float uDim;
       varying vec2 vUv;
       varying float vRim;
       void main() {
@@ -79,7 +63,7 @@ function makeTractMaterial(color) {
         float core = 1.0 - vRim * 0.6;
         float a = (0.10 + 0.22 * dash + uActivity * (0.25 + 0.55 * dash)) * ends * core;
         vec3 c = uColor * (0.8 + 1.4 * uActivity * dash);
-        gl_FragColor = vec4(c, a);
+        gl_FragColor = vec4(c, a * uDim);
         #include <colorspace_fragment>
       }`,
     transparent: true,
@@ -88,19 +72,20 @@ function makeTractMaterial(color) {
 }
 
 export class Pathways {
-  constructor(scene, atlas) {
+  constructor(scene, atlas, tracts) {
     this.atlas = atlas;
     this.group = new THREE.Group();
     scene.add(this.group);
     this.tracts = [];
-    this.pathwayVisible = { direct: true, indirect: true, hyperdirect: true, dopamine: true };
+    this.pathwayVisible = {};
 
-    for (const def of TRACTS) {
+    for (const def of tracts) {
       for (const h of ['L', 'R']) {
         const from = atlas.byId.get(`${def.from}_${h}`);
         const to = atlas.byId.get(`${def.to}_${h}`);
         if (!from || !to) continue;
         const material = makeTractMaterial(NT_COLOR[def.nt]);
+        material.userData.dim = 1; // phase focus fades tracts outside the focus
         const mesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
         mesh.renderOrder = 2;
         this.group.add(mesh);
@@ -148,27 +133,35 @@ export class Pathways {
     }
   }
 
-  /** rateOf(pop) -> Hz from the circuit; dot density is proportional to the presynaptic rate */
+  /** rateOf(pop, hemisphere) -> Hz from the circuit; dot density is proportional to the presynaptic rate */
   setRates(rateOf) {
-    for (const tr of this.tracts) tr.rate = rateOf(tr.def.src) / 12;
+    for (const tr of this.tracts) tr.rate = rateOf(tr.def.src, tr.h) / 12;
   }
 
   setPathwayVisible(name, on) {
     this.pathwayVisible[name] = on;
   }
 
+  /** inFocus(tract) -> bool; tracts outside the current focus fade out */
+  setFocus(inFocus) {
+    for (const tr of this.tracts) tr.focus = inFocus(tr);
+  }
+
   update(dt, geometryChanged) {
     if (geometryChanged) this.rebuildCurves();
 
     for (const tr of this.tracts) {
-      const visible = this.group.visible && !tr.hidden && (!tr.def.pathway || this.pathwayVisible[tr.def.pathway]);
+      const visible = this.group.visible && !tr.hidden && (!tr.def.pathway || this.pathwayVisible[tr.def.pathway] !== false);
       tr.mesh.visible = visible;
       const targetActivity = Math.min(1, tr.rate / 4);
       tr.activity += (targetActivity - tr.activity) * (1 - Math.exp(-dt * 5));
       const u = tr.mesh.material.uniforms;
-      u.uActivity.value = tr.activity;
+      const dimTarget = tr.focus === false ? 0.15 : 1;
+      tr.dim = (tr.dim ?? 1) + (dimTarget - (tr.dim ?? 1)) * (1 - Math.exp(-dt * 4 - 0.02));
+      u.uActivity.value = tr.activity * tr.dim;
+      u.uDim.value = tr.dim;
       u.uTime.value += dt * (0.6 + 2.4 * tr.activity);
-      if (!visible || tr.rate <= 0) continue;
+      if (!visible || tr.rate <= 0 || tr.focus === false) continue;
       tr.acc += dt * tr.rate;
       while (tr.acc >= 1) {
         tr.acc -= 1;

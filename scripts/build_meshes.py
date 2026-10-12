@@ -41,6 +41,17 @@ STRUCTURES = [
     ("thalamus", "Thalamus", "context", "#9fb7a7", ["THM"], 5000),
     ("va", "Ventral anterior nucleus of thalamus (VA)", "thalamus", "#66e0a3", ["VA"], 2500),
     ("vl", "Ventral lateral nucleus of thalamus (VL; pallidal input reaches its oral part, VLo)", "thalamus", "#2ecc71", ["VL"], 3000),
+    # attention + executive windows
+    ("vis", "Visual cortex (occipital lobe)", "cortex", "#5ad1c8", ["OccL"], 12000),
+    ("spl", "Superior parietal lobule / intraparietal sulcus", "cortex", "#26a69a", ["SPL"], 10000),
+    ("tpj", "Temporo-parietal junction (approx. supramarginal + angular gyri)", "cortex", "#80cbc4", ["SMG", "AnG"], 10000),
+    ("fef", "Frontal eye field (approx. caudal MFG, BA6/8)", "cortex", "#4db6ac", ["FEF"], 5000),
+    ("dlpfc", "Dorsolateral prefrontal cortex (BA9/46, MFG rostral to BA6)", "cortex", "#9575cd", ["DLPFC"], 10000),
+    ("acc", "Anterior cingulate cortex", "cortex", "#ba68c8", ["CgGr"], 8000),
+    ("pul", "Pulvinar", "thalamus", "#4dd0e1", ["Pul"], 2500),
+    ("md", "Mediodorsal nucleus of thalamus", "thalamus", "#7986cb", ["MD"], 2500),
+    ("sc", "Superior colliculus", "brainstem", "#00bfa5", ["SC"], 1500),
+    ("lc", "Locus coeruleus (approx.: dorsal rostral pontine tegmentum; not in atlas)", "brainstem", "#ff5c8a", ["LC"], 800),
 ]
 
 # Gaussian smoothing (voxels) applied to binary masks before marching cubes
@@ -78,6 +89,17 @@ def premotor_mask(atlas, ann):
         strip = (a_idx >= front[None, :] - PMC_DEPTH_VOX) & (a_idx < front[None, :] + 4)
         mask[:, row, :] = frontal[:, row, :] & strip
     return mask
+
+
+def lc_mask(atlas, ann):
+    """LC is not in the atlas: dorsal quarter of the rostral half of the pontine tegmentum."""
+    m = np.isin(ann, descendant_ids(atlas, "PnTg"))
+    idx = np.argwhere(m)
+    a0, a1 = idx[:, 0].min(), idx[:, 0].max()
+    s0, s1 = idx[:, 1].min(), idx[:, 1].max()
+    out = np.zeros_like(m)
+    out[a0:(a0 + a1) // 2 + 1, s0:s0 + (s1 - s0) // 4 + 1, :] = True
+    return m & out
 
 
 def to_world(verts_vox, center_vox):
@@ -127,6 +149,12 @@ def main():
             mask = brain
         elif acrs == ["PMC"]:
             mask = pmc
+        elif acrs == ["FEF"]:
+            mask = pmc & np.isin(ann, descendant_ids(atlas, "MFG"))
+        elif acrs == ["DLPFC"]:
+            mask = np.isin(ann, descendant_ids(atlas, "MFG")) & ~pmc
+        elif acrs == ["LC"]:
+            mask = lc_mask(atlas, ann)
         else:
             ids = []
             for acr in acrs:
@@ -137,7 +165,8 @@ def main():
             mask = np.isin(ann, ids)
         if group == "context" and sid == "thalamus":
             # keep VA/VL visible: thalamus shell without the two motor nuclei
-            mask = mask & ~np.isin(ann, descendant_ids(atlas, "VA") + descendant_ids(atlas, "VL"))
+            mask = mask & ~np.isin(ann, descendant_ids(atlas, "VA") + descendant_ids(atlas, "VL")
+                                     + descendant_ids(atlas, "Pul") + descendant_ids(atlas, "MD"))
         for h, cols in hemis.items():
             m = mask & cols[None, None, :]
             if m.sum() < 20:

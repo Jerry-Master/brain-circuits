@@ -1,87 +1,23 @@
-// Trial narration. The circuit (src/model/circuit.js) runs continuously; each
-// phase is only a window of model time with its own slow-motion factor and a
-// caption describing what the simulation produces in that window. Captions
-// are checked against the simulation by scripts/verify_model.mjs.
-import { TRIAL, DT } from '../model/circuit.js';
-
-// ms of model time shown per real second in each phase
-export const PHASES = [
-  {
-    key: 'baseline',
-    from: 0,
-    to: TRIAL.cueOn,
-    msPerSec: 50,
-    title: 'Tonic brake',
-    desc: () =>
-      'At rest GPi fires ~70 Hz and its GABA holds VLo thalamus down. GPe (~60 Hz) restrains STN (~20 Hz). Striatal MSNs sit in their down state, silent.',
-  },
-  {
-    key: 'hyperdirect',
-    from: TRIAL.cueOn,
-    to: TRIAL.cueOn + 15,
-    msPerSec: 5,
-    title: 'Hyperdirect pathway',
-    desc: (o) =>
-      o.lesion.hyperdirect
-        ? 'Hyperdirect pathway lesioned: no fast cortico-subthalamic volley, so the early GPi excitation is much smaller.'
-        : 'The cortical command reaches STN first (≈ 2.5 ms). STN excites GPi in both channels: a fast, global "hold everything" before striatum has even responded.',
-  },
-  {
-    key: 'direct',
-    from: TRIAL.cueOn + 15,
-    to: TRIAL.cueOn + 75,
-    msPerSec: 15,
-    title: 'Direct pathway',
-    desc: (o) =>
-      o.lesion.direct
-        ? 'Direct pathway lesioned: D1 MSNs cannot inhibit GPi, so GPi-A keeps firing and nothing is released.'
-        : 'Cortex lifts D1 MSNs of channel A out of the down state. Their GABA silences GPi-A. The weaker channel-B command does not recruit MSNs.',
-  },
-  {
-    key: 'indirect',
-    from: TRIAL.cueOn + 75,
-    to: TRIAL.cueOn + 200,
-    msPerSec: 40,
-    title: 'Indirect pathway · surround',
-    desc: (o) =>
-      o.lesion.indirect
-        ? 'Indirect pathway lesioned: no D2 → GPe → STN route, so the surround inhibition of competing channel B weakens.'
-        : 'D2 MSNs inhibit GPe-A, disinhibiting STN. STN projects diffusely, so it drives GPi in every channel; only channel A, where D1 input cancels it, stays open. Channel B is held shut.',
-  },
-  {
-    key: 'release',
-    from: TRIAL.cueOn + 200,
-    to: TRIAL.cueOff,
-    msPerSec: 50,
-    title: 'Thalamic release · return',
-    desc: (o) =>
-      o.dopamine < 0.05
-        ? 'Dopamine depleted: D2 drive outweighs D1, the GPi-A pause is shallow (≈ 50 vs 28 Hz) and VLo-A release weakens — the bradykinetic, parkinsonian direction.'
-        : 'With GPi-A silent, VLo-A relay neurons fire and their glutamate re-excites cortex A: the loop closes and the selected command is reinforced.',
-  },
-  {
-    key: 'offset',
-    from: TRIAL.cueOff,
-    to: TRIAL.length,
-    msPerSec: 80,
-    title: 'Command ends',
-    desc: () => 'Cortical drive stops, MSNs fall silent and the tonic GPi brake returns. The next trial starts from rest.',
-  },
-];
+// Trial narration. A window's model runs continuously; each phase (defined in
+// src/windows/*.js) is only a window of model time with its own slow-motion
+// factor and a caption describing what the simulation produces in that window.
+// Captions are checked against the simulation by scripts/verify_model.mjs.
+import { DT } from '../model/engine.js';
 
 export class Sequence {
-  /** circuit: the running model. opts mirrors the circuit's lesion / dopamine state for captions. */
-  constructor(circuit) {
+  /** circuit: the running model; phases: [{key, from, to, msPerSec, title, desc(opts)}]; opts(circuit) feeds captions */
+  constructor(circuit, phases, opts) {
     this.circuit = circuit;
+    this.optsFn = opts;
     this.speed = 1;
     this.playing = true;
     this.listeners = [];
-    this.stages = PHASES;
+    this.stages = phases;
     this.index = this.phaseAt(circuit.t);
   }
 
   get opts() {
-    return { lesion: this.circuit.lesion, dopamine: this.circuit.dopamine };
+    return this.optsFn(this.circuit);
   }
 
   get stage() {

@@ -3,14 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Motor Loop 3D</title>
+    <title>Brain Loops 3D</title>
   </head>
   <body>
     <div id="brain-view"></div>
 
+    <nav id="tabs" aria-label="Windows"></nav>
+
     <header id="hud">
-      <div class="eyebrow">Basal ganglia · thalamus · cortex</div>
-      <h1>The <em>motor</em> loop</h1>
+      <div class="eyebrow" id="hud-eyebrow"></div>
+      <h1 id="hud-title"></h1>
+      <div id="chips"></div>
 
       <div id="stage-card">
         <svg id="loop-ring" viewBox="0 0 220 220" aria-label="Loop diagram"></svg>
@@ -32,38 +35,27 @@
         </button>
       </div>
 
-      <div id="key">
-        <span><i class="sw glu"></i>glutamate</span>
-        <span><i class="sw gaba"></i>GABA</span>
-        <span><i class="sw da"></i>dopamine</span>
-        <span class="src">Allen Human Ref. Atlas</span>
-      </div>
+      <canvas id="inset" hidden></canvas>
+
+      <div id="key"></div>
     </header>
 
     <div id="hint">
       Drag: rotate · Right-drag: pan · <b>Wheel: explode / collapse</b> · Shift/Ctrl + wheel or pinch: zoom ·
-      Space: play/pause · L: labels · E: reset explode · N: neuron panel
+      Space: play/pause · 1/2/3: window · L: labels · E: reset explode · N: neuron panel
     </div>
 
     <div id="tooltip" hidden></div>
 
-    <section id="neuron-panel">
+    <section id="neuron-panel" class="collapsed">
       <div class="panel-head">
         <div>
           <div class="eyebrow">Cellular view</div>
-          <span class="title">Basal-ganglia <em>neuron loop</em></span>
+          <span class="title" id="neuron-title"></span>
         </div>
         <div class="cam-buttons">
-          <button data-focus="overview" class="on">All</button>
-          <button data-focus="0">Ctx</button>
-          <button data-focus="1">D1</button>
-          <button data-focus="2">D2</button>
-          <button data-focus="3">GPe</button>
-          <button data-focus="4">STN</button>
-          <button data-focus="5">GPi</button>
-          <button data-focus="6">VLo</button>
-          <button data-focus="7">SNc</button>
-          <button id="btn-collapse" title="Collapse (N)">–</button>
+          <span id="cam-focus"></span>
+          <button id="btn-collapse" title="Expand / collapse (N)">+</button>
         </div>
       </div>
       <div class="panel-body">

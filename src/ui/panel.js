@@ -1,34 +1,29 @@
 import GUI from 'lil-gui';
 import { GROUP_OPACITY } from '../brain/materials.js';
 
-const SHORT_NAMES = {
-  brain: 'Whole brain', m1: 'M1', pmc: 'Premotor', caudate: 'Caudate', putamen: 'Putamen',
-  gpe: 'GPe', gpi: 'GPi', stn: 'STN', sn: 'S. nigra', thalamus: 'Thalamus', va: 'VA', vl: 'VLo',
+let gui = null;
+const opacity = { ...GROUP_OPACITY };
+const OP_LABELS = {
+  shell: 'brain', cortex: 'cortex', context: 'context',
+  striatum: 'striatum', pallidum: 'pallidum', stn: 'STN', nigra: 'S. nigra', thalamus: 'thalamic nuclei', brainstem: 'brainstem',
 };
 
 /**
- * lil-gui control panel. `app` exposes: atlas, sequence, exploder, pathways,
- * bloom, setLabels(on), state {labels, tracts, autoRotate, zoom}.
+ * lil-gui control panel, rebuilt for each window. `app` exposes: def (active
+ * window), model, atlas, sequence, exploder, pathways, bloom, state, setLabels(on),
+ * setZoom(z), setGroupOpacity(group, v), applyVisibility(), onStagesRebuilt().
  */
 export function buildGui(app) {
-  const gui = new GUI({ title: 'Controls', width: 250 });
-  const { atlas, sequence, circuit, exploder, pathways } = app;
+  const wasOpen = gui ? !gui._closed : false;
+  gui?.destroy();
+  gui = new GUI({ title: 'Controls', width: 250 });
+  const { def, sequence, exploder } = app;
 
   const loop = gui.addFolder('Model').close();
   loop.add(sequence, 'speed', 0.25, 3, 0.05).name('playback speed');
-  // pathways are intact when ticked; unticking lesions the projections in the network
-  const intact = { direct: true, indirect: true, hyperdirect: true };
-  for (const p of Object.keys(intact)) {
-    loop.add(intact, p).name(`${p} pathway`).onChange((v) => {
-      circuit.lesion[p] = !v;
-      app.onStagesRebuilt();
-    });
-  }
-  loop.add(circuit, 'dopamine', 0, 0.4, 0.01).name('dopamine λ').onChange(() => {
-    circuit.setDopamine(circuit.dopamine);
-    app.onStagesRebuilt();
-  });
-  loop.add(app.state, 'tracts').name('show tracts').onChange((v) => (pathways.group.visible = v));
+  def.gui(loop, app);
+  loop.add(app.state, 'tracts').name('show tracts').onChange((v) => (app.pathways.group.visible = v));
+  loop.add(app.state, 'focus').name('phase focus').listen();
 
   const view = gui.addFolder('View').close();
   view.add(exploder, 'target', 0, 1, 0.01).name('explode').listen();
@@ -39,29 +34,23 @@ export function buildGui(app) {
   view.add(app.state, 'hemispheres', ['both', 'left', 'right']).name('hemisphere').onChange(() => app.applyVisibility());
 
   const op = gui.addFolder('Opacity').close();
-  const opacity = { ...GROUP_OPACITY };
-  const setGroupOpacity = (group, v) => {
-    for (const s of atlas.structures) {
-      if (s.meta.group !== group) continue;
-      const m = s.mesh.material;
-      if (m.uniforms) m.uniforms.uOpacity.value = v;
-      else m.opacity = v;
-    }
-  };
-  const OP_LABELS = {
-    shell: 'brain', cortex: 'cortex', context: 'context',
-    striatum: 'putamen', pallidum: 'pallidum', stn: 'STN', nigra: 'S. nigra', thalamus: 'VA·VLo',
-  };
+  const groups = new Set(['shell', ...Object.keys(def.structures).map((b) => app.groupOf(b))]);
   for (const g of Object.keys(OP_LABELS)) {
-    op.add(opacity, g, 0, 1, 0.01).name(OP_LABELS[g]).onChange((v) => setGroupOpacity(g, v));
+    if (!groups.has(g)) continue;
+    op.add(opacity, g, 0, 1, 0.01).name(OP_LABELS[g]).onChange((v) => app.setGroupOpacity(g, v));
   }
 
   const vis = gui.addFolder('Structures').close();
-  for (const [base, name] of Object.entries(SHORT_NAMES)) {
-    app.state.visible[base] = true;
-    vis.add(app.state.visible, base).name(name).onChange(() => app.applyVisibility());
+  app.state.visible.brain ??= true;
+  vis.add(app.state.visible, 'brain').name('Whole brain').onChange(() => app.applyVisibility());
+  for (const [base, s] of Object.entries(def.structures)) {
+    app.state.visible[base] ??= true;
+    vis.add(app.state.visible, base).name(s.name).onChange(() => app.applyVisibility());
   }
 
-  gui.close();
+  if (wasOpen) gui.open();
+  else gui.close();
   return gui;
 }
+
+export { opacity as groupOpacity };

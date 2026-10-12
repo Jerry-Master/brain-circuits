@@ -5,38 +5,10 @@ const CX = 110;
 const CY = 110;
 const R = 78;
 
-const NODES = [
-  { id: 'cortex', label: 'M1·PMC', angle: -90, color: '#ff8a65' },
-  { id: 'putamen', label: 'PUT', angle: -30, color: '#4fc3f7' },
-  { id: 'gpe', label: 'GPe', angle: 30, color: '#7e8cff' },
-  { id: 'stn', label: 'STN', angle: 90, color: '#ffd54f' },
-  { id: 'gpi', label: 'GPi', angle: 150, color: '#b388ff' },
-  { id: 'thal', label: 'VLo', angle: 210, color: '#2ecc71' },
-  { id: 'snc', label: 'SNc', center: [CX + 22, CY + 6], color: '#e17bd6' },
-];
 const GLU = '#ffb347';
 const GABA = '#5cc8ff';
 const DA = '#e17bd6';
-const ARCS = [
-  { id: 'c-p', from: 'cortex', to: 'putamen', color: GLU },
-  { id: 'p-gpe', from: 'putamen', to: 'gpe', color: GABA, pathway: 'indirect' },
-  { id: 'gpe-stn', from: 'gpe', to: 'stn', color: GABA, pathway: 'indirect' },
-  { id: 'stn-gpi', from: 'stn', to: 'gpi', color: GLU },
-  { id: 'gpi-t', from: 'gpi', to: 'thal', color: GABA },
-  { id: 't-c', from: 'thal', to: 'cortex', color: GLU },
-  { id: 'p-gpi', from: 'putamen', to: 'gpi', color: GABA, pathway: 'direct', chord: 30 },
-  { id: 'c-stn', from: 'cortex', to: 'stn', color: GLU, pathway: 'hyperdirect', chord: 34 },
-  { id: 'snc-p', from: 'snc', to: 'putamen', color: DA, pathway: 'dopamine', chord: -10, dashed: true },
-];
-const STAGE_MAP = {
-  baseline: { nodes: ['gpi', 'thal'], arcs: ['gpi-t'] },
-  hyperdirect: { nodes: ['cortex', 'stn', 'gpi'], arcs: ['c-stn', 'stn-gpi'] },
-  direct: { nodes: ['cortex', 'putamen', 'gpi', 'snc'], arcs: ['c-p', 'p-gpi', 'snc-p'] },
-  indirect: { nodes: ['putamen', 'gpe', 'stn', 'gpi'], arcs: ['p-gpe', 'gpe-stn', 'stn-gpi'] },
-  release: { nodes: ['gpi', 'thal', 'cortex'], arcs: ['gpi-t', 't-c'] },
-  offset: { nodes: ['cortex'], arcs: [] },
-};
-// live read-out rows: circuit population, label, colour
+const NE = '#9cff6e';
 
 const pt = (deg, r = R) => [CX + r * Math.cos((deg * Math.PI) / 180), CY + r * Math.sin((deg * Math.PI) / 180)];
 const el = (tag, attrs = {}, parent) => {
@@ -69,27 +41,42 @@ function swapText(target, text, opts) {
 }
 
 export class Hud {
-  constructor(sequence) {
-    this.sequence = sequence;
+  constructor() {
     this.svg = document.getElementById('loop-ring');
     this.num = document.getElementById('stage-num');
     this.title = document.getElementById('stage-title');
     this.desc = document.getElementById('stage-desc');
     this.pips = document.getElementById('pips');
+    this.lastIndex = -1;
+  }
+
+  /** switch to a window: its sequence, diagram ({nodes, arcs, clusters?}) and per-phase focus map */
+  load(sequence, hud, focus) {
+    this.sequence = sequence;
+    this.def = hud;
+    this.focus = focus;
+    this.solo = null;
     this.buildRing();
     this.lastIndex = -1;
   }
 
   buildRing() {
     const svg = this.svg;
+    const { nodes: NODES, arcs: ARCS, clusters = [] } = this.def;
     svg.replaceChildren();
     const defs = el('defs', {}, svg);
-    for (const [name, color] of [['glu', GLU], ['gaba', GABA], ['da', DA]]) {
+    for (const [name, color] of [['glu', GLU], ['gaba', GABA], ['da', DA], ['ne', NE]]) {
       const m = el('marker', { id: `arrow-${name}`, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 5, markerHeight: 5, orient: 'auto-start-reverse' }, defs);
       el('path', { d: 'M0 1L9 5L0 9z', fill: color }, m);
     }
-    el('circle', { cx: CX, cy: CY, r: R, fill: 'none', stroke: 'rgba(255,255,255,0.05)', 'stroke-dasharray': '1 4' }, svg);
-    const xy = Object.fromEntries(NODES.map((n) => [n.id, n.center ?? pt(n.angle)]));
+    for (const c of clusters) {
+      const g = el('g', { class: 'cluster', style: `color:${c.color}` }, svg);
+      el('rect', { x: c.x, y: c.y, width: c.w, height: c.h, rx: 8 }, g);
+      el('text', { x: c.x + 5, y: c.y + c.h - 5 }, g).textContent = c.label;
+    }
+    const ring = NODES.some((n) => n.angle != null);
+    if (ring) el('circle', { cx: CX, cy: CY, r: R, fill: 'none', stroke: 'rgba(255,255,255,0.05)', 'stroke-dasharray': '1 4' }, svg);
+    const xy = Object.fromEntries(NODES.map((n) => [n.id, n.xy ?? pt(n.angle)]));
     const pos = Object.fromEntries(NODES.map((n) => [n.id, n.angle]));
     this.arcs = {};
     for (const a of ARCS) {
@@ -113,7 +100,7 @@ export class Hud {
         const [x2, y2] = pt(pos[a.to] - 11);
         d = `M${x1} ${y1} A${R} ${R} 0 0 1 ${x2} ${y2}`;
       }
-      const marker = a.color === GLU ? 'glu' : a.color === DA ? 'da' : 'gaba';
+      const marker = a.color === GLU ? 'glu' : a.color === DA ? 'da' : a.color === NE ? 'ne' : 'gaba';
       const path = el('path', { d, class: 'arc', stroke: a.color, 'marker-end': `url(#arrow-${marker})` }, svg);
       if (a.dashed) path.setAttribute('stroke-dasharray', '2 3');
       this.arcs[a.id] = { ...a, path, len: path.getTotalLength() };
@@ -124,8 +111,8 @@ export class Hud {
       const g = el('g', { class: 'node', style: `color:${n.color}` }, svg);
       const [x, y] = xy[n.id];
       el('circle', { class: 'halo', cx: x, cy: y, r: 6 }, g);
-      el('circle', { cx: x, cy: y, r: n.center ? 4 : 5, stroke: n.color }, g);
-      const [lx, ly] = n.center ? [x, y + 16] : pt(n.angle, R + 19);
+      el('circle', { cx: x, cy: y, r: n.xy ? 4 : 5, stroke: n.color }, g);
+      const [lx, ly] = n.xy ? [x, y + 15] : pt(n.angle, R + 19);
       el('text', { x: lx, y: ly + 3, 'text-anchor': 'middle' }, g).textContent = n.label;
       this.nodes[n.id] = g;
     }
@@ -133,7 +120,7 @@ export class Hud {
   }
 
   /** rebuild pips + pathway visibility after the stage list changes */
-  setStages(stages, opts) {
+  setStages(stages, pathwayOn) {
     this.pips.replaceChildren(
       ...stages.map((st, i) => {
         const b = document.createElement('button');
@@ -144,20 +131,26 @@ export class Hud {
       }),
     );
     document.getElementById('stage-count').textContent = String(stages.length).padStart(2, '0');
-    this.refreshLesions(opts);
+    for (const a of Object.values(this.arcs)) a.path.classList.toggle('off', !!a.pathway && pathwayOn[a.pathway] === false);
     this.lastIndex = -1;
   }
 
-  refreshLesions(opts) {
-    const off = (p) => (p === 'dopamine' ? opts.dopamine < 0.05 : !!opts.lesion[p]);
-    for (const a of Object.values(this.arcs)) a.path.classList.toggle('off', !!a.pathway && off(a.pathway));
+  /** highlight one sub-network ({nodes, arcs}) instead of the phase focus; null restores it */
+  setSolo(chip) {
+    this.solo = chip;
+    if (this.stage) this.highlight(this.stage);
+  }
+
+  highlight(stage) {
+    const map = this.solo ?? this.focus[stage.key] ?? { nodes: [], arcs: [] };
+    for (const [id, g] of Object.entries(this.nodes)) g.classList.toggle('on', map.nodes.includes(id));
+    for (const [id, a] of Object.entries(this.arcs)) a.path.classList.toggle('on', map.arcs.includes(id));
+    this.activeArcs = map.arcs.map((id) => this.arcs[id]).filter(Boolean);
   }
 
   showStage(stage, index) {
-    const map = STAGE_MAP[stage.key];
-    for (const [id, g] of Object.entries(this.nodes)) g.classList.toggle('on', map.nodes.includes(id));
-    for (const [id, a] of Object.entries(this.arcs)) a.path.classList.toggle('on', map.arcs.includes(id));
-    this.activeArcs = map.arcs.map((id) => this.arcs[id]);
+    this.stage = stage;
+    this.highlight(stage);
 
     const title = stage.title.replace(/^\d+\s*·\s*/, '');
     if (index !== this.lastIndex) {

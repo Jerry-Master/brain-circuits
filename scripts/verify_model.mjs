@@ -1,6 +1,10 @@
 // Checks that the captions in src/brain/sequence.js match what the circuit
 // actually produces. Run: node scripts/verify_model.mjs
 import { Circuit, TRIAL, POP_KEYS, DT } from '../src/model/circuit.js';
+import { Attention, TRIAL as AT } from '../src/model/attention.js';
+import { Executive, TRIAL as ET } from '../src/model/executive.js';
+
+const only = process.argv[2]; // motor | attention | executive
 
 const TRIALS = 6;
 const WIN = {
@@ -39,6 +43,7 @@ const check = (name, ok, detail) => {
 };
 const f = (x) => x.toFixed(0);
 
+if (!only || only === 'motor') {
 const N = measure();
 const b = N.base;
 check('tonic GPi ~70 Hz', b.gpi[0] > 50 && b.gpi[0] < 90, f(b.gpi[0]));
@@ -63,6 +68,59 @@ const Lh = measure((c) => (c.lesion.hyperdirect = true));
 check('hyperdirect lesion: no early GPi rise', Lh.peak.gpi < N.peak.gpi - 10, `peak ${f(N.peak.gpi)} -> ${f(Lh.peak.gpi)}`);
 const Li = measure((c) => (c.lesion.indirect = true));
 check('indirect lesion: weaker surround', Li.cue.gpi[1] < N.cue.gpi[1], `GPi-B ${f(N.cue.gpi[1])} -> ${f(Li.cue.gpi[1])}`);
+
+}
+
+// ---------- attention (src/windows/attention.js captions); loose thresholds ----------
+if (!only || only === 'attention') {
+  const a = new Attention();
+  let lcCue = 0, lcNone = 0, nc = 0, nn = 0;
+  let tpjInv = 0, tpjVal = 0, ni = 0, nv = 0;
+  a.run(AT.length);
+  for (let i = 0; i < (64 * AT.length) / DT; i++) {
+    a.step();
+    const t = a.t, cue = a.trial.cue;
+    if (t >= AT.cueOn + 60 && t < AT.cueOn + 200) {
+      if (cue === 'none') { lcNone += a.meanRate('lc'); nn++; } else { lcCue += a.meanRate('lc'); nc++; }
+    }
+    if (t >= AT.targetOn + 60 && t < AT.targetOn + 250) {
+      const r = a.rate('tpj', a.trial.loc);
+      if (cue === 'invalid') { tpjInv += r; ni++; } else if (cue === 'valid') { tpjVal += r; nv++; }
+    }
+  }
+  check('alert: LC burst on cue trials', lcCue / nc > lcNone / nn + 2, `${f(lcNone / nn)} -> ${f(lcCue / nc)}`);
+  check('reorient: TPJ invalid > valid', tpjInv / ni > tpjVal / nv, `${f(tpjVal / nv)} / ${f(tpjInv / ni)}`);
+  const m = (k, v) => {
+    const r = a.history.filter((h) => h.correct && h[k] === v).map((h) => h.rt);
+    return r.reduce((x, y) => x + y, 0) / r.length;
+  };
+  check('conflict: incongruent slower', m('flank', 'incongruent') > m('flank', 'congruent'), `${f(m('flank', 'congruent'))} / ${f(m('flank', 'incongruent'))}`);
+  check('alerting: no cue slower than double', m('cue', 'none') > m('cue', 'double'), `${f(m('cue', 'none'))} / ${f(m('cue', 'double'))}`);
+  check('orienting: double slower than valid', m('cue', 'double') > m('cue', 'valid'), `${f(m('cue', 'double'))} / ${f(m('cue', 'valid'))}`);
+}
+
+// ---------- executive (src/windows/executive.js captions) ----------
+if (!only || only === 'executive') {
+  const run = (setup) => {
+    const e = new Executive();
+    setup?.(e);
+    const r = { base: [0, 0], hold: [0, 0], gpiBase: 0, gpiGate: 0 };
+    let nb = 0, nh = 0, ng = 0;
+    e.run(ET.length);
+    for (let i = 0; i < (4 * ET.length) / DT; i++) {
+      e.step();
+      const A = e.cueStripe, B = e.distStripe;
+      if (e.t >= 50 && e.t < ET.cueOn) { r.base[0] += e.meanRate('dlpfc'); r.gpiBase += e.meanRate('gpi'); nb++; }
+      if (e.t >= ET.cueOn + 80 && e.t < ET.cueOff + 50) { r.gpiGate += e.rate('gpi', A); ng++; }
+      if (e.t >= ET.distOff + 150 && e.t < ET.clearOn) { r.hold[0] += e.rate('dlpfc', A); r.hold[1] += e.rate('dlpfc', B); nh++; }
+    }
+    return { base: r.base[0] / nb, gpiBase: r.gpiBase / nb, gpiGate: r.gpiGate / ng, holdA: r.hold[0] / nh, holdB: r.hold[1] / nh };
+  };
+  const E = run();
+  check('exec: tonic GPi, quiet DLPFC', E.gpiBase > 40 && E.base < 8, `GPi ${f(E.gpiBase)} DLPFC ${f(E.base)}`);
+  check('exec: GPi pauses for relevant item', E.gpiGate < 0.6 * E.gpiBase, f(E.gpiGate));
+  check('exec: item held through distractor', E.holdA > 3 * E.base + 10 && E.holdA > 3 * E.holdB, `A ${f(E.holdA)} B ${f(E.holdB)}`);
+}
 
 console.log(fails ? `\n${fails} check(s) failed` : '\nall checks passed');
 process.exit(fails ? 1 : 0);
