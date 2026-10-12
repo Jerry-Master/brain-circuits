@@ -3,6 +3,9 @@
 import { Executive, TRIAL, CHANNELS } from '../model/executive.js';
 import { GLU, GABA, DA } from './common.js';
 
+// stripe A = left hemisphere, B = right: tags on the 3D labels and the inset share these colours
+const STRIPE_COLOR = ['#a5e887', '#ff9e80'];
+
 export const PHASES = [
   {
     key: 'baseline',
@@ -11,7 +14,7 @@ export const PHASES = [
     msPerSec: 100,
     title: 'Gate closed',
     desc: () =>
-      'Working memory is empty: both DLPFC stripes idle (~3 Hz). GPi/SNr fires tonically (~60 Hz) and holds MD thalamus down, so the gate into prefrontal cortex is shut.',
+      'Two memory slots (stripes): A in the left hemisphere, B in the right, each with its own gate through caudate → GPi → MD. Both are empty: DLPFC idles (~3 Hz). GPi/SNr fires tonically (~60 Hz) and holds MD thalamus down, so the gate into prefrontal cortex is shut.',
   },
   {
     key: 'gate',
@@ -91,21 +94,20 @@ function drawInset(g, W, H, m) {
     const r = m.rate('dlpfc', c);
     g.fillStyle = 'rgba(255,255,255,0.1)';
     g.fillRect(x, 42, w, 10);
-    g.fillStyle = '#9575cd';
+    g.fillStyle = STRIPE_COLOR[c];
     g.fillRect(x, 42, Math.min(1, r / 70) * w, 10);
     // gate: GPi pause
     const open = m.rate('gpi', c) < 25;
     g.textAlign = 'left';
-    g.fillStyle = '#cfd8ea';
-    g.fillText(`stripe ${CHANNELS[c]}`, x, 66);
-    g.textAlign = 'right';
+    g.fillStyle = STRIPE_COLOR[c];
+    g.fillText(`stripe ${CHANNELS[c]} · ${c ? 'right' : 'left'}`, x, 66);
     g.fillStyle = open ? '#7dffb0' : '#7f8aa3';
-    g.fillText(open ? 'gate open' : 'gate shut', x + w, 66);
+    g.fillText(open ? 'gate open' : 'gate shut', x, 81); // own row: shares no line with the stripe name on narrow HUDs
   }
   g.textAlign = 'left';
   g.fillStyle = '#7f8aa3';
   g.font = '10.5px ui-monospace, monospace';
-  g.fillText(`DLPFC rate = memory · λ ${m.lambda.toFixed(2)}`, 8, 84);
+  g.fillText(`DLPFC rate = memory · λ ${m.lambda.toFixed(2)}`, 8, 100);
 }
 
 export const executive = {
@@ -114,7 +116,8 @@ export const executive = {
   eyebrow: 'Prefrontal cortex · basal ganglia · MD thalamus',
   titleHtml: 'The <em>executive</em> loop',
   key: [['glu', 'glutamate'], ['gaba', 'GABA'], ['da', 'dopamine']],
-  keyNote: 'Left hemisphere = stripe A, right = stripe B',
+  keyNote: `<b style="color:${STRIPE_COLOR[0]}">A</b> = left hemisphere stripe, <b style="color:${STRIPE_COLOR[1]}">B</b> = right`,
+  hemiTag: { L: ['A', STRIPE_COLOR[0]], R: ['B', STRIPE_COLOR[1]] },
   create: () => new Executive(),
   phases: PHASES,
   opts: (m) => ({
@@ -164,7 +167,7 @@ export const executive = {
   },
   view: { target: [0, 6, 25], dir: [-0.6, 0.45, 0.66] },
   focusDefault: true,
-  inset: { height: 92, draw: drawInset },
+  inset: { height: 108, draw: drawInset },
 
   structures: {
     dlpfc: { short: 'DLPFC', name: 'DLPFC', pop: 'dlpfc', role: 'Dorsolateral prefrontal cortex (BA 9/46): holds gated items in persistently active stripes.' },

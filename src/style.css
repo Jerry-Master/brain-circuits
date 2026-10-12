@@ -238,6 +238,7 @@ button svg { width: 12px; height: 12px; display: block; fill: currentColor; }
 .label3d.cell { font: normal 400 16px var(--serif); letter-spacing: 0.01em; text-transform: none; }
 .label3d.cell::before { display: none; }
 .label3d.cell small { font: 500 9.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--c); margin-left: 6px; font-style: normal; }
+.label3d .tag { font-weight: 700; margin-left: 2px; }
 .label3d.syn { font-size: 9.5px; color: var(--c); gap: 5px; }
 .label3d.syn small { color: #9aa5ba; font-weight: 400; }
 .label3d.note { font-size: 9.5px; color: #9aa5ba; letter-spacing: 0.05em; text-transform: none; }

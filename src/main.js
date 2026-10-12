@@ -159,6 +159,16 @@ const chips = document.getElementById('chips');
 const inset = document.getElementById('inset');
 const insetCtx = inset.getContext('2d');
 
+// canvas backing store must match the HUD's content width (its padding differs on phones)
+function sizeInset() {
+  if (!app.def?.inset) return;
+  const cs = getComputedStyle(inset.parentElement);
+  const W = inset.parentElement.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  inset.width = W * devicePixelRatio;
+  inset.height = app.def.inset.height * devicePixelRatio;
+  inset.style.height = `${app.def.inset.height}px`;
+}
+
 function setWindow(id) {
   if (!WINDOWS[id] || app.def?.id === id) return;
   const w = build(id);
@@ -171,6 +181,8 @@ function setWindow(id) {
     const sd = def.structures[s.meta.base];
     const mat = s.mesh.material;
     s.label.element.textContent = sd?.short ?? s.meta.base;
+    const tag = sd?.pop && def.hemiTag?.[s.meta.hemisphere];
+    if (tag) s.label.element.insertAdjacentHTML('beforeend', `<b class="tag" style="color:${tag[1]}">${tag[0]}</b>`);
     if (mat.uniforms || !sd) continue;
     setStructureColor(mat, sd.color ?? s.meta.color);
     s.label.element.style.setProperty('--c', sd.color ?? s.meta.color);
@@ -208,10 +220,7 @@ function setWindow(id) {
   }
   inset.hidden = !def.inset;
   if (def.inset) {
-    const W = inset.parentElement.clientWidth - 48;
-    inset.width = W * devicePixelRatio;
-    inset.height = def.inset.height * devicePixelRatio;
-    inset.style.height = `${def.inset.height}px`;
+    sizeInset();
   }
 
   // cellular panel: example cells of this window's network
@@ -360,6 +369,7 @@ const onResize = () => {
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   labelRenderer.setSize(innerWidth, innerHeight);
+  sizeInset();
 };
 addEventListener('resize', onResize);
 addEventListener('orientationchange', onResize);
