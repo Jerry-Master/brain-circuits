@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Motor Loop 3D</title>
+  </head>
+  <body>
+    <div id="brain-view"></div>
+
+    <header id="hud">
+      <div class="eyebrow">Basal ganglia · thalamus · cortex</div>
+      <h1>The <em>motor</em> loop</h1>
+
+      <div id="stage-card">
+        <svg id="loop-ring" viewBox="0 0 220 220" aria-label="Loop diagram"></svg>
+        <div class="stage-meta">
+          <div id="stage-num" class="roll"></div>
+          <div class="stage-of">of <span id="stage-count"></span></div>
+        </div>
+      </div>
+      <h2 id="stage-title"></h2>
+      <p id="stage-desc"></p>
+
+      <div id="transport">
+        <button id="btn-play" title="Play / pause (Space)" aria-label="Play / pause">
+          <svg viewBox="0 0 16 16"><path id="play-icon" d="M4 3h3v10H4zM9 3h3v10H9z" /></svg>
+        </button>
+        <div id="pips"></div>
+        <button id="btn-step" title="Next stage" aria-label="Next stage">
+          <svg viewBox="0 0 16 16"><path d="M3 3l7 5-7 5zM11 3h2v10h-2z" /></svg>
+        </button>
+      </div>
+      <div id="key">
+        <span><i class="sw glu"></i>glutamate</span>
+        <span><i class="sw gaba"></i>GABA</span>
+        <span class="src">Allen Human Ref. Atlas</span>
+      </div>
+    </header>
+
+    <div id="hint">
+      Drag: rotate · Right-drag: pan · <b>Wheel: explode / collapse</b> · Shift/Ctrl + wheel or pinch: zoom ·
+      Space: play/pause · L: labels · E: reset explode · N: neuron panel
+    </div>
+
+    <div id="tooltip" hidden></div>
+
+    <section id="neuron-panel">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Cellular view</div>
+          <span class="title">Basal-ganglia <em>neuron loop</em></span>
+        </div>
+        <div class="cam-buttons">
+          <button data-focus="overview" class="on">All</button>
+          <button data-focus="0">Ctx</button>
+          <button data-focus="1">D1</button>
+          <button data-focus="2">D2</button>
+          <button data-focus="3">GPe</button>
+          <button data-focus="4">STN</button>
+          <button data-focus="5">GPi</button>
+          <button data-focus="6">VL</button>
+          <button id="btn-collapse" title="Collapse (N)">–</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="neuron-view"></div>
+        <canvas id="scope"></canvas>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

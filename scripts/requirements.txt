@@ -1,0 +1,6 @@
+brainglobe-atlasapi
+numpy
+scipy
+scikit-image
+trimesh
+fast-simplification

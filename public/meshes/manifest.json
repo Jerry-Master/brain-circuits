@@ -1,0 +1,601 @@
+{
+ "source": "Ding et al 2016, https://doi.org/10.1002/cne.24080",
+ "units": "mm",
+ "axes": "x=right, y=superior, z=anterior",
+ "structures": [
+  {
+   "id": "brain_R",
+   "base": "brain",
+   "label": "Whole brain",
+   "group": "shell",
+   "color": "#c9d3e6",
+   "hemisphere": "R",
+   "centroid": [
+    28.59,
+    -2.06,
+    -4.4
+   ],
+   "bbox": [
+    [
+     -0.32,
+     -80.08,
+     -85.45
+    ],
+    [
+     72.22,
+     72.08,
+     95.55
+    ]
+   ],
+   "voxels": 6988781,
+   "triangles": 70000
+  },
+  {
+   "id": "brain_L",
+   "base": "brain",
+   "label": "Whole brain",
+   "group": "shell",
+   "color": "#c9d3e6",
+   "hemisphere": "L",
+   "centroid": [
+    -28.75,
+    -1.98,
+    -4.57
+   ],
+   "bbox": [
+    [
+     -72.28,
+     -79.96,
+     -85.47
+    ],
+    [
+     -0.18,
+     72.1,
+     95.57
+    ]
+   ],
+   "voxels": 6974629,
+   "triangles": 69998
+  },
+  {
+   "id": "m1_R",
+   "base": "m1",
+   "label": "Primary motor cortex (M1, precentral gyrus)",
+   "group": "cortex",
+   "color": "#ff7a59",
+   "hemisphere": "R",
+   "centroid": [
+    39.34,
+    35.95,
+    12.17
+   ],
+   "bbox": [
+    [
+     6.52,
+     -14.55,
+     -14.98
+    ],
+    [
+     66.28,
+     71.04,
+     35.59
+    ]
+   ],
+   "voxels": 181294,
+   "triangles": 14000
+  },
+  {
+   "id": "m1_L",
+   "base": "m1",
+   "label": "Primary motor cortex (M1, precentral gyrus)",
+   "group": "cortex",
+   "color": "#ff7a59",
+   "hemisphere": "L",
+   "centroid": [
+    -39.49,
+    35.92,
+    12.25
+   ],
+   "bbox": [
+    [
+     -66.28,
+     -14.54,
+     -14.97
+    ],
+    [
+     -6.48,
+     71.07,
+     35.6
+    ]
+   ],
+   "voxels": 181294,
+   "triangles": 14000
+  },
+  {
+   "id": "pmc_R",
+   "base": "pmc",
+   "label": "Premotor cortex (BA6, approx. caudal SFG/MFG)",
+   "group": "cortex",
+   "color": "#ffb347",
+   "hemisphere": "R",
+   "centroid": [
+    30.75,
+    41.86,
+    27.0
+   ],
+   "bbox": [
+    [
+     2.5,
+     9.71,
+     5.54
+    ],
+    [
+     56.27,
+     68.56,
+     54.22
+    ]
+   ],
+   "voxels": 132513,
+   "triangles": 12000
+  },
+  {
+   "id": "pmc_L",
+   "base": "pmc",
+   "label": "Premotor cortex (BA6, approx. caudal SFG/MFG)",
+   "group": "cortex",
+   "color": "#ffb347",
+   "hemisphere": "L",
+   "centroid": [
+    -30.82,
+    41.73,
+    27.14
+   ],
+   "bbox": [
+    [
+     -56.24,
+     9.7,
+     5.53
+    ],
+    [
+     -2.5,
+     68.57,
+     54.14
+    ]
+   ],
+   "voxels": 132513,
+   "triangles": 12000
+  },
+  {
+   "id": "caudate_R",
+   "base": "caudate",
+   "label": "Caudate nucleus",
+   "group": "context",
+   "color": "#8aa0b8",
+   "hemisphere": "R",
+   "centroid": [
+    18.93,
+    -2.07,
+    16.35
+   ],
+   "bbox": [
+    [
+     4.28,
+     -25.26,
+     -16.55
+    ],
+    [
+     36.68,
+     16.41,
+     47.55
+    ]
+   ],
+   "voxels": 43801,
+   "triangles": 2998
+  },
+  {
+   "id": "caudate_L",
+   "base": "caudate",
+   "label": "Caudate nucleus",
+   "group": "context",
+   "color": "#8aa0b8",
+   "hemisphere": "L",
+   "centroid": [
+    -19.05,
+    -2.22,
+    16.18
+   ],
+   "bbox": [
+    [
+     -36.64,
+     -25.3,
+     -16.54
+    ],
+    [
+     -4.29,
+     16.4,
+     47.57
+    ]
+   ],
+   "voxels": 43801,
+   "triangles": 2998
+  },
+  {
+   "id": "putamen_R",
+   "base": "putamen",
+   "label": "Putamen",
+   "group": "striatum",
+   "color": "#4fc3f7",
+   "hemisphere": "R",
+   "centroid": [
+    26.47,
+    -10.76,
+    19.86
+   ],
+   "bbox": [
+    [
+     13.76,
+     -26.42,
+     -0.56
+    ],
+    [
+     34.68,
+     4.56,
+     42.08
+    ]
+   ],
+   "voxels": 53418,
+   "triangles": 4998
+  },
+  {
+   "id": "putamen_L",
+   "base": "putamen",
+   "label": "Putamen",
+   "group": "striatum",
+   "color": "#4fc3f7",
+   "hemisphere": "L",
+   "centroid": [
+    -26.55,
+    -10.82,
+    19.78
+   ],
+   "bbox": [
+    [
+     -34.66,
+     -26.42,
+     -0.59
+    ],
+    [
+     -13.79,
+     4.54,
+     42.11
+    ]
+   ],
+   "voxels": 53418,
+   "triangles": 4998
+  },
+  {
+   "id": "gpe_R",
+   "base": "gpe",
+   "label": "Globus pallidus, external segment (GPe)",
+   "group": "pallidum",
+   "color": "#7e8cff",
+   "hemisphere": "R",
+   "centroid": [
+    19.99,
+    -10.43,
+    18.22
+   ],
+   "bbox": [
+    [
+     10.08,
+     -16.9,
+     5.85
+    ],
+    [
+     26.25,
+     -3.59,
+     29.05
+    ]
+   ],
+   "voxels": 7354,
+   "triangles": 3000
+  },
+  {
+   "id": "gpe_L",
+   "base": "gpe",
+   "label": "Globus pallidus, external segment (GPe)",
+   "group": "pallidum",
+   "color": "#7e8cff",
+   "hemisphere": "L",
+   "centroid": [
+    -20.07,
+    -10.4,
+    18.08
+   ],
+   "bbox": [
+    [
+     -26.25,
+     -16.9,
+     5.78
+    ],
+    [
+     -10.07,
+     -3.59,
+     29.05
+    ]
+   ],
+   "voxels": 7354,
+   "triangles": 3000
+  },
+  {
+   "id": "gpi_R",
+   "base": "gpi",
+   "label": "Globus pallidus, internal segment (GPi)",
+   "group": "pallidum",
+   "color": "#b388ff",
+   "hemisphere": "R",
+   "centroid": [
+    17.86,
+    -13.59,
+    16.2
+   ],
+   "bbox": [
+    [
+     10.37,
+     -17.98,
+     9.19
+    ],
+    [
+     23.71,
+     -8.99,
+     22.58
+    ]
+   ],
+   "voxels": 4453,
+   "triangles": 2500
+  },
+  {
+   "id": "gpi_L",
+   "base": "gpi",
+   "label": "Globus pallidus, internal segment (GPi)",
+   "group": "pallidum",
+   "color": "#b388ff",
+   "hemisphere": "L",
+   "centroid": [
+    -17.91,
+    -13.58,
+    16.2
+   ],
+   "bbox": [
+    [
+     -23.71,
+     -17.98,
+     9.18
+    ],
+    [
+     -10.36,
+     -8.98,
+     22.59
+    ]
+   ],
+   "voxels": 4453,
+   "triangles": 2500
+  },
+  {
+   "id": "stn_R",
+   "base": "stn",
+   "label": "Subthalamic nucleus (STN)",
+   "group": "stn",
+   "color": "#ffd54f",
+   "hemisphere": "R",
+   "centroid": [
+    10.07,
+    -18.52,
+    9.67
+   ],
+   "bbox": [
+    [
+     5.6,
+     -21.97,
+     4.61
+    ],
+    [
+     14.12,
+     -15.36,
+     14.07
+    ]
+   ],
+   "voxels": 1367,
+   "triangles": 1500
+  },
+  {
+   "id": "stn_L",
+   "base": "stn",
+   "label": "Subthalamic nucleus (STN)",
+   "group": "stn",
+   "color": "#ffd54f",
+   "hemisphere": "L",
+   "centroid": [
+    -10.06,
+    -18.5,
+    9.77
+   ],
+   "bbox": [
+    [
+     -14.12,
+     -21.97,
+     4.62
+    ],
+    [
+     -5.6,
+     -15.32,
+     14.03
+    ]
+   ],
+   "voxels": 1367,
+   "triangles": 1500
+  },
+  {
+   "id": "thalamus_R",
+   "base": "thalamus",
+   "label": "Thalamus",
+   "group": "context",
+   "color": "#9fb7a7",
+   "hemisphere": "R",
+   "centroid": [
+    11.93,
+    -4.85,
+    3.5
+   ],
+   "bbox": [
+    [
+     -0.3,
+     -20.57,
+     -14.95
+    ],
+    [
+     25.79,
+     10.01,
+     21.64
+    ]
+   ],
+   "voxels": 71517,
+   "triangles": 5000
+  },
+  {
+   "id": "thalamus_L",
+   "base": "thalamus",
+   "label": "Thalamus",
+   "group": "context",
+   "color": "#9fb7a7",
+   "hemisphere": "L",
+   "centroid": [
+    -12.12,
+    -4.86,
+    3.42
+   ],
+   "bbox": [
+    [
+     -25.79,
+     -20.61,
+     -14.94
+    ],
+    [
+     -0.2,
+     9.99,
+     21.68
+    ]
+   ],
+   "voxels": 70967,
+   "triangles": 4998
+  },
+  {
+   "id": "va_R",
+   "base": "va",
+   "label": "Ventral anterior nucleus of thalamus (VA)",
+   "group": "thalamus",
+   "color": "#66e0a3",
+   "hemisphere": "R",
+   "centroid": [
+    9.53,
+    -1.35,
+    12.21
+   ],
+   "bbox": [
+    [
+     2.34,
+     -12.41,
+     3.69
+    ],
+    [
+     16.73,
+     8.56,
+     20.08
+    ]
+   ],
+   "voxels": 8556,
+   "triangles": 2500
+  },
+  {
+   "id": "va_L",
+   "base": "va",
+   "label": "Ventral anterior nucleus of thalamus (VA)",
+   "group": "thalamus",
+   "color": "#66e0a3",
+   "hemisphere": "L",
+   "centroid": [
+    -9.45,
+    -1.52,
+    12.27
+   ],
+   "bbox": [
+    [
+     -16.72,
+     -12.39,
+     3.68
+    ],
+    [
+     -2.44,
+     8.55,
+     20.09
+    ]
+   ],
+   "voxels": 8556,
+   "triangles": 2500
+  },
+  {
+   "id": "vl_R",
+   "base": "vl",
+   "label": "Ventral lateral nucleus of thalamus (VL)",
+   "group": "thalamus",
+   "color": "#2ecc71",
+   "hemisphere": "R",
+   "centroid": [
+    13.72,
+    -0.61,
+    5.32
+   ],
+   "bbox": [
+    [
+     7.17,
+     -11.65,
+     -3.15
+    ],
+    [
+     19.25,
+     8.53,
+     12.04
+    ]
+   ],
+   "voxels": 7841,
+   "triangles": 3000
+  },
+  {
+   "id": "vl_L",
+   "base": "vl",
+   "label": "Ventral lateral nucleus of thalamus (VL)",
+   "group": "thalamus",
+   "color": "#2ecc71",
+   "hemisphere": "L",
+   "centroid": [
+    -13.73,
+    -0.72,
+    5.33
+   ],
+   "bbox": [
+    [
+     -19.25,
+     -11.68,
+     -3.13
+    ],
+    [
+     -7.17,
+     8.52,
+     12.02
+    ]
+   ],
+   "voxels": 7841,
+   "triangles": 3000
+  }
+ ]
+}
