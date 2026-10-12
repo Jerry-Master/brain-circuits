@@ -37,9 +37,10 @@ STRUCTURES = [
     ("gpe", "Globus pallidus, external segment (GPe)", "pallidum", "#7e8cff", ["GPe"], 3000),
     ("gpi", "Globus pallidus, internal segment (GPi)", "pallidum", "#b388ff", ["GPi"], 2500),
     ("stn", "Subthalamic nucleus (STN)", "stn", "#ffd54f", ["STH"], 1500),
+    ("sn", "Substantia nigra", "nigra", "#e17bd6", ["SN"], 2000),
     ("thalamus", "Thalamus", "context", "#9fb7a7", ["THM"], 5000),
     ("va", "Ventral anterior nucleus of thalamus (VA)", "thalamus", "#66e0a3", ["VA"], 2500),
-    ("vl", "Ventral lateral nucleus of thalamus (VL)", "thalamus", "#2ecc71", ["VL"], 3000),
+    ("vl", "Ventral lateral nucleus of thalamus (VL; pallidal input reaches its oral part, VLo)", "thalamus", "#2ecc71", ["VL"], 3000),
 ]
 
 # Gaussian smoothing (voxels) applied to binary masks before marching cubes

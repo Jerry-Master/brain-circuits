@@ -4,22 +4,22 @@ import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { makeShellMaterial, makeStructureMaterial, renderOrderFor } from './materials.js';
 
 export const ROLES = {
-  brain: 'Whole-brain surface (glass shell). Wheel to split the hemispheres apart.',
+  brain: 'Whole-brain surface. Wheel to split the hemispheres.',
   m1: 'Executes movement. Layer-5 pyramidal neurons send glutamatergic corticostriatal axons to the putamen and corticospinal axons to the cord.',
-  pmc: 'Plans and selects movements (PMd, PMv, SMA). Approximated as the caudal 20 mm of SFG/MFG anterior to the precentral gyrus.',
-  caudate: 'Associative striatum (context only; the motor loop runs mainly through the putamen).',
+  pmc: 'Plans and selects movements (PMd, PMv, SMA).',
+  caudate: 'Associative striatum.',
   putamen: 'Motor striatum. GABAergic medium spiny neurons: D1 (direct → GPi) and D2 (indirect → GPe).',
   gpe: 'GABAergic and tonically active. Inhibits the STN; inhibited itself by D2 MSNs (indirect pathway).',
   gpi: 'Main basal-ganglia output. Tonic GABAergic inhibition of VA/VL; when it pauses, the thalamus is disinhibited.',
-  stn: 'Glutamatergic. Excites GPi. Released from GPe inhibition in the indirect pathway (acts as a brake).',
-  thalamus: 'Remainder of the thalamus (context).',
+  stn: 'Glutamatergic, ~20 Hz at rest. Receives the fast hyperdirect cortical input and GPe inhibition; projects diffusely to GPi and GPe.',
+  sn: 'Dopaminergic SNc neurons set striatal gain: D1 ×(1+λ), D2 ×(1−λ).',
+  thalamus: 'Remainder of the thalamus.',
   va: 'Motor thalamus. Relays pallidal output to premotor / prefrontal cortex.',
-  vl: 'Motor thalamus. Relays pallidal (and cerebellar) output to M1 and premotor cortex.',
+  vl: 'Motor thalamus. VLo relays pallidal output to M1, SMA and premotor cortex.',
 };
 
-const SHORT = {
-  brain: 'Brain', m1: 'M1', pmc: 'Premotor', caudate: 'Caudate', putamen: 'Putamen',
-  gpe: 'GPe', gpi: 'GPi', stn: 'STN', thalamus: 'Thalamus', va: 'VA', vl: 'VL',
+const SHORT = { brain: 'Brain', m1: 'M1', pmc: 'Premotor', caudate: 'Caudate', putamen: 'Putamen',
+  gpe: 'GPe', gpi: 'GPi', stn: 'STN', sn: 'SN', thalamus: 'Thalamus', va: 'VA', vl: 'VLo',
 };
 
 /**

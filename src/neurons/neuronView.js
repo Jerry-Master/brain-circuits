@@ -6,50 +6,59 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { buildNeuron, mulberry32, fluorMaterial } from './morphology.js';
-import { IzhNeuron, PRESETS } from './izhikevich.js';
+import { PROJECTIONS } from '../model/circuit.js';
 import { Scope } from './scope.js';
 
-// simulated milliseconds per real second: slow motion so individual APs are visible
-const SIM_MS_PER_S = 140;
-const SIM_DT = 0.1; // ms
 const MAX_APS = 8; // per axon (shader uniform array size)
 
-const NT_COLOR = { glu: new THREE.Color('#ffb347'), gaba: new THREE.Color('#5cc8ff') };
+const NT_COLOR = { glu: new THREE.Color('#ffb347'), gaba: new THREE.Color('#5cc8ff'), da: new THREE.Color('#e17bd6') };
 const EPSP_COLOR = new THREE.Color('#ffe08a');
 const IPSP_COLOR = new THREE.Color('#5cc8ff');
 
-// Full loop as a ring of example cells, laid out clockwise like the HUD diagram.
+// One example cell per population (channel A), laid out clockwise like the HUD
+// diagram. Each cell is a real neuron of the simulated network; the synapses
+// drawn between them are connections that exist in the network.
 const CHAIN = [
-  { key: 'pyr', type: 'pyr', label: 'L5 pyramidal · M1/PMC', short: 'Ctx L5', pos: [0, 40, 0], labelY: 24 },
+  { key: 'ctx', type: 'pyr', label: 'L5 pyramidal · M1/PMC', short: 'Ctx L5', pos: [0, 40, 0], labelY: 24 },
   { key: 'd1', type: 'msn', label: 'D1 MSN · putamen', short: 'D1 MSN', pos: [46, 22, 6], labelY: 10 },
   { key: 'd2', type: 'msn', label: 'D2 MSN · putamen', short: 'D2 MSN', pos: [64, -6, -4], labelY: 10, color: '#81d4fa' },
   { key: 'gpe', type: 'gpi', label: 'GPe neuron', short: 'GPe', pos: [40, -36, 0], labelY: 10, color: '#7e8cff' },
-  { key: 'stn', type: 'stn', label: 'STN neuron', short: 'STN', pos: [0, -48, 4], labelY: 9 },
+  { key: 'stn', type: 'stn', label: 'STN neuron', short: 'STN', pos: [0, -50, 4], labelY: 9 },
   { key: 'gpi', type: 'gpi', label: 'GPi neuron', short: 'GPi', pos: [-42, -30, 0], labelY: 10 },
-  { key: 'vl', type: 'vl', label: 'VL relay neuron · thalamus', short: 'VA/VL', pos: [-58, 8, 0], labelY: 10 },
+  { key: 'vl', type: 'vl', label: 'VLo relay neuron · thalamus', short: 'VLo', pos: [-58, 8, 0], labelY: 10 },
+  { key: 'snc', type: 'stn', label: 'SNc dopamine neuron', short: 'SNc', pos: [24, -10, -18], labelY: 8, color: '#e17bd6' },
 ];
-// synapses (indices into SYNAPSES) and cells highlighted in each loop stage, mirroring the brain tracts
+// synapses (indices into SYNAPSES) and cells highlighted in each phase, mirroring the brain tracts
 const STAGE_FOCUS = {
-  cortex: { syn: [], cells: ['pyr'] },
-  striatum: { syn: [0, 1], cells: ['pyr', 'd1', 'd2'] },
-  direct: { syn: [2], cells: ['d1', 'gpi'] },
-  indirect: { syn: [3, 4, 5], cells: ['d2', 'gpe', 'stn', 'gpi'] },
-  thalamus: { syn: [6], cells: ['gpi', 'vl'] },
-  return: { syn: [7], cells: ['vl', 'pyr'] },
+  baseline: { syn: [7, 9, 4], cells: ['gpi', 'vl', 'gpe', 'stn'] },
+  hyperdirect: { syn: [2, 6], cells: ['ctx', 'stn', 'gpi'] },
+  direct: { syn: [0, 3, 11], cells: ['ctx', 'd1', 'gpi', 'snc'] },
+  indirect: { syn: [1, 4, 5, 6, 8, 12], cells: ['d2', 'gpe', 'stn', 'gpi', 'snc'] },
+  release: { syn: [9, 10], cells: ['gpi', 'vl', 'ctx'] },
+  offset: { syn: [], cells: ['ctx', 'gpi'] },
 };
 const DIM = 0.15;
 const IDX = Object.fromEntries(CHAIN.map((c, i) => [c.key, i]));
+// proj: id in circuit PROJECTIONS (gives the real delay). travel: visual seconds along the axon.
 // bulge: >0 bows the axon outward from the ring centre, <0 inward
 const SYNAPSES = [
-  { from: 'pyr', to: 'd1', nt: 'glu', weight: 6, myelin: true, travel: 0.55, bulge: 10 },
-  { from: 'pyr', to: 'd2', nt: 'glu', weight: 6, myelin: true, travel: 0.65, bulge: 18 },
-  { from: 'd1', to: 'gpi', nt: 'gaba', weight: -16, myelin: false, travel: 1.0, bulge: -6 },
-  { from: 'd2', to: 'gpe', nt: 'gaba', weight: -16, myelin: false, travel: 0.8, bulge: 8 },
-  { from: 'gpe', to: 'stn', nt: 'gaba', weight: -8, myelin: true, travel: 0.5, bulge: 8 },
-  { from: 'stn', to: 'gpi', nt: 'glu', weight: 8, myelin: true, travel: 0.5, bulge: 8 },
-  { from: 'gpi', to: 'vl', nt: 'gaba', weight: -6, myelin: true, travel: 0.55, bulge: 8 },
-  { from: 'vl', to: 'pyr', nt: 'glu', weight: 10, myelin: true, travel: 0.7, bulge: 10 },
-];
+  { proj: 'ctx-d1', myelin: true, travel: 0.55, bulge: 10 },
+  { proj: 'ctx-d2', myelin: true, travel: 0.65, bulge: 18 },
+  { proj: 'ctx-stn', myelin: true, travel: 0.5, bulge: -14, label: 'hyperdirect' },
+  { proj: 'd1-gpi', myelin: false, travel: 1.0, bulge: -6 },
+  { proj: 'd2-gpe', myelin: false, travel: 0.8, bulge: 8 },
+  { proj: 'gpe-stn', myelin: true, travel: 0.5, bulge: 8 },
+  { proj: 'stn-gpi', myelin: true, travel: 0.5, bulge: 8 },
+  { proj: 'gpe-gpi', myelin: true, travel: 0.6, bulge: -4 },
+  { proj: 'stn-gpe', myelin: true, travel: 0.5, bulge: -5 },
+  { proj: 'gpi-vl', myelin: true, travel: 0.55, bulge: 8 },
+  { proj: 'vl-ctx', myelin: true, travel: 0.7, bulge: 10 },
+  { from: 'snc', to: 'd1', nt: 'da', myelin: false, travel: 1.1, bulge: -3, note: 'D1 gain ×(1+λ)' },
+  { from: 'snc', to: 'd2', nt: 'da', myelin: false, travel: 1.1, bulge: -3, note: 'D2 gain ×(1−λ)' },
+].map((s) => {
+  const p = PROJECTIONS.find((q) => q.id === s.proj);
+  return p ? { ...s, from: p.from, to: p.to, nt: p.nt, delay: p.delay } : s;
+});
 
 function glowTexture() {
   const c = document.createElement('canvas');
@@ -192,7 +201,8 @@ function label(text, cls, color) {
 }
 
 export class NeuronView {
-  constructor(container, scopeCanvas) {
+  constructor(container, scopeCanvas, circuit) {
+    this.circuit = circuit;
     this.container = container;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color('#04060c');
@@ -227,16 +237,14 @@ export class NeuronView {
     this.scene.add(key);
 
     this.glowTex = glowTexture();
-    this.drive = {};
-    this.bias = {};
     this.buildNeurons();
+    this.pickCells();
     this.buildSynapses();
     this.buildApSprites();
     this.dust = dust(this.glowTex);
     this.scene.add(this.dust);
 
     this.scope = new Scope(scopeCanvas, this.neurons.map((n, i) => ({ label: CHAIN[i].short, color: `#${n.color.getHexString()}` })));
-    this.simAcc = 0;
 
     new ResizeObserver(() => this.resize()).observe(container);
     this.resize();
@@ -260,7 +268,6 @@ export class NeuronView {
       const l = label(c.label, 'cell', `#${n.color.getHexString()}`);
       l.position.set(0, c.labelY, 0);
       n.group.add(l);
-      n.model = new IzhNeuron(PRESETS[c.key]);
       n.key = c.key;
       n.flash = 0;
       n.psp = 0;
@@ -372,15 +379,21 @@ export class NeuronView {
       this.scene.add(nt);
       const ntParticles = Array.from({ length: NTN }, () => ({ p: new THREE.Vector3(), v: new THREE.Vector3() }));
 
-      const l = label(def.nt === 'glu' ? 'Glu  +' : 'GABA  −', 'syn', `#${NT_COLOR[def.nt].getHexString()}`);
+      const txt = def.nt === 'da' ? `DA · ${def.note}` : `${def.nt === 'glu' ? 'Glu +' : 'GABA −'} · ${def.delay} ms`;
+      const l = label(txt, 'syn', `#${NT_COLOR[def.nt].getHexString()}`);
       l.position.copy(B).add(new THREE.Vector3(0, 2.6, 0));
       this.scene.add(l);
-      if (i === 7) {
+      if (i === 10) {
         const ml = label('myelin · nodes of Ranvier · saltatory', 'note', '#efe9da');
         ml.position.copy(curve.getPointAt(0.45)).add(new THREE.Vector3(0, -2.5, 0));
         this.scene.add(ml);
       }
-      if (i === 2) {
+      if (def.label) {
+        const ml = label(def.label, 'note', '#ffd54f');
+        ml.position.copy(curve.getPointAt(0.5)).add(new THREE.Vector3(3, 0, 0));
+        this.scene.add(ml);
+      }
+      if (i === 3) {
         const ml = label('unmyelinated · continuous', 'note', '#9ccfe8');
         ml.position.copy(curve.getPointAt(0.5)).add(new THREE.Vector3(0, -2.5, 0));
         this.scene.add(ml);
@@ -421,10 +434,28 @@ export class NeuronView {
     for (const n of this.neurons) n.focusT = f.cells.includes(n.key) ? 1 : DIM;
   }
 
-  /** external (stage) drive, per neuron key */
-  setDrive(drive, bias) {
-    this.drive = drive;
-    this.bias = bias;
+  /**
+   * Choose which network neuron each example cell shows: start from cortical cell 0
+   * of channel A and follow real connections, so every drawn synapse exists.
+   */
+  pickCells() {
+    const c = this.circuit;
+    const pick = { ctx: 0, snc: 0 };
+    const order = ['ctx-d1', 'ctx-d2', 'ctx-stn', 'd1-gpi', 'gpe-stn', 'stn-gpi', 'gpi-vl'];
+    for (const id of order) {
+      const pr = c.projections.find((p) => p.def.id === id);
+      if (pick[pr.def.to] !== undefined) continue;
+      const tg = [...pr.targets[pick[pr.def.from]]].filter((j) => j < pr.dst.def.n); // channel A
+      pick[pr.def.to] = tg[0] ?? 0;
+    }
+    if (pick.gpe === undefined) {
+      const pr = c.projections.find((p) => p.def.id === 'd2-gpe');
+      pick.gpe = [...pr.targets[pick.d2]].filter((j) => j < pr.dst.def.n)[0] ?? 0;
+    }
+    for (const n of this.neurons) {
+      n.pop = c.pops[n.key];
+      n.idx = pick[n.key] ?? 0;
+    }
   }
 
   /** 'overview' or a neuron index: frames that cell and its incoming synapses */
@@ -450,7 +481,6 @@ export class NeuronView {
   update(dt, simDt) {
     this.dust.rotation.y += dt * 0.012;
     this.dust.material.uniforms.uTime.value += dt;
-    this.simulate(simDt);
     this.animate(simDt);
 
     if (this.camAnim) {
@@ -463,23 +493,18 @@ export class NeuronView {
     this.controls.update();
   }
 
-  simulate(simDt) {
-    this.simAcc += simDt * SIM_MS_PER_S;
-    const steps = Math.min(4000, Math.floor(this.simAcc / SIM_DT));
-    this.simAcc -= steps * SIM_DT;
-    const vm = new Array(this.neurons.length);
-    for (let s = 0; s < steps; s++) {
-      this.neurons.forEach((n, i) => {
-        n.model.iExt = this.drive[n.key] ?? 0;
-        const spiked = n.model.step(SIM_DT, this.bias[n.key] ?? 0);
-        if (spiked) {
-          n.flash = 1;
-          for (const syn of n.out) if (syn.aps.length < MAX_APS) syn.aps.push({ t: 0 });
-        }
-        vm[i] = spiked ? 30 : n.model.v;
-      });
-      this.scope.sample(vm);
-    }
+  /** called after every circuit step: scope sample + launch visual APs for example-cell spikes */
+  sample() {
+    const vm = this.vm ?? (this.vm = new Array(this.neurons.length));
+    this.neurons.forEach((n, i) => {
+      const spiked = n.pop.spiked[n.idx];
+      if (spiked) {
+        n.flash = 1;
+        for (const syn of n.out) if (syn.aps.length < MAX_APS) syn.aps.push({ t: 0 });
+      }
+      vm[i] = spiked ? 30 : n.pop.v[n.idx];
+    });
+    this.scope.sample(vm);
   }
 
   animate(dt) {
@@ -566,16 +591,16 @@ export class NeuronView {
     for (const n of this.neurons) {
       n.flash *= Math.exp(-dt * 10);
       n.psp *= Math.exp(-dt * 3);
-      const depol = THREE.MathUtils.clamp((n.model.v + 70) / 45, 0, 1);
+      const depol = THREE.MathUtils.clamp((n.pop.v[n.idx] + 70) / 45, 0, 1);
       n.somaMat.emissiveIntensity = (0.08 + depol * 0.5 + n.flash * 3.5) * n.focusK;
       n.dendMat.emissive.copy(n.psp >= 0 ? EPSP_COLOR : IPSP_COLOR);
       n.dendMat.emissiveIntensity = (0.05 + Math.min(1.4, Math.abs(n.psp) * 0.9)) * n.focusK;
     }
   }
 
+  /** visual only: the network already delivered this spike after its real delay */
   transmit(syn) {
-    syn.post.model.iSyn += syn.def.weight;
-    syn.post.psp += Math.sign(syn.def.weight);
+    syn.post.psp += syn.def.nt === 'gaba' ? -1 : 1;
     syn.psd.emissiveIntensity = 2.2 * syn.focusK;
     syn.release = 1;
     // fuse three docked-nearest idle vesicles

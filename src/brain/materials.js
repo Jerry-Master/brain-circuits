@@ -8,11 +8,12 @@ export const GROUP_OPACITY = {
   striatum: 0.9,
   pallidum: 0.92,
   stn: 0.95,
+  nigra: 0.9,
   thalamus: 0.92,
 };
 
 // Draw order: opaque-ish nuclei first, then translucent cortex/context, glass shell last.
-const RENDER_ORDER = { striatum: 1, pallidum: 1, stn: 1, thalamus: 1, cortex: 2, context: 3, shell: 4 };
+const RENDER_ORDER = { striatum: 1, pallidum: 1, stn: 1, nigra: 1, thalamus: 1, cortex: 2, context: 3, shell: 4 };
 
 /** Fresnel "glass" material for the whole-brain shell: rim bright, face-on nearly invisible. */
 export function makeShellMaterial(color) {

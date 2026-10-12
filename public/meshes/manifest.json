@@ -436,6 +436,60 @@
    "triangles": 1500
   },
   {
+   "id": "sn_R",
+   "base": "sn",
+   "label": "Substantia nigra",
+   "group": "nigra",
+   "color": "#e17bd6",
+   "hemisphere": "R",
+   "centroid": [
+    10.21,
+    -24.08,
+    3.59
+   ],
+   "bbox": [
+    [
+     4.9,
+     -28.82,
+     -3.06
+    ],
+    [
+     14.66,
+     -19.96,
+     10.95
+    ]
+   ],
+   "voxels": 2562,
+   "triangles": 2000
+  },
+  {
+   "id": "sn_L",
+   "base": "sn",
+   "label": "Substantia nigra",
+   "group": "nigra",
+   "color": "#e17bd6",
+   "hemisphere": "L",
+   "centroid": [
+    -10.21,
+    -24.15,
+    3.48
+   ],
+   "bbox": [
+    [
+     -14.65,
+     -28.82,
+     -3.02
+    ],
+    [
+     -4.88,
+     -19.95,
+     10.96
+    ]
+   ],
+   "voxels": 2562,
+   "triangles": 2000
+  },
+  {
    "id": "thalamus_R",
    "base": "thalamus",
    "label": "Thalamus",
@@ -546,7 +600,7 @@
   {
    "id": "vl_R",
    "base": "vl",
-   "label": "Ventral lateral nucleus of thalamus (VL)",
+   "label": "Ventral lateral nucleus of thalamus (VL; pallidal input reaches its oral part, VLo)",
    "group": "thalamus",
    "color": "#2ecc71",
    "hemisphere": "R",
@@ -573,7 +627,7 @@
   {
    "id": "vl_L",
    "base": "vl",
-   "label": "Ventral lateral nucleus of thalamus (VL)",
+   "label": "Ventral lateral nucleus of thalamus (VL; pallidal input reaches its oral part, VLo)",
    "group": "thalamus",
    "color": "#2ecc71",
    "hemisphere": "L",

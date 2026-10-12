@@ -3,7 +3,7 @@ import { GROUP_OPACITY } from '../brain/materials.js';
 
 const SHORT_NAMES = {
   brain: 'Whole brain', m1: 'M1', pmc: 'Premotor', caudate: 'Caudate', putamen: 'Putamen',
-  gpe: 'GPe', gpi: 'GPi', stn: 'STN', thalamus: 'Thalamus', va: 'VA', vl: 'VL',
+  gpe: 'GPe', gpi: 'GPi', stn: 'STN', sn: 'S. nigra', thalamus: 'Thalamus', va: 'VA', vl: 'VLo',
 };
 
 /**
@@ -12,23 +12,25 @@ const SHORT_NAMES = {
  */
 export function buildGui(app) {
   const gui = new GUI({ title: 'Controls', width: 250 });
-  const { atlas, sequence, exploder, pathways } = app;
+  const { atlas, sequence, circuit, exploder, pathways } = app;
 
-  const loop = gui.addFolder('Loop animation');
-  loop.add(sequence, 'speed', 0.25, 3, 0.05).name('speed');
-  loop.add(sequence.opts, 'direct').name('direct').onChange((v) => {
-    pathways.setPathwayVisible('direct', v);
-    sequence.rebuild();
+  const loop = gui.addFolder('Model').close();
+  loop.add(sequence, 'speed', 0.25, 3, 0.05).name('playback speed');
+  // pathways are intact when ticked; unticking lesions the projections in the network
+  const intact = { direct: true, indirect: true, hyperdirect: true };
+  for (const p of Object.keys(intact)) {
+    loop.add(intact, p).name(`${p} pathway`).onChange((v) => {
+      circuit.lesion[p] = !v;
+      app.onStagesRebuilt();
+    });
+  }
+  loop.add(circuit, 'dopamine', 0, 0.4, 0.01).name('dopamine λ').onChange(() => {
+    circuit.setDopamine(circuit.dopamine);
     app.onStagesRebuilt();
   });
-  loop.add(sequence.opts, 'indirect').name('indirect').onChange((v) => {
-    pathways.setPathwayVisible('indirect', v);
-    sequence.rebuild();
-    app.onStagesRebuilt();
-  });
-  loop.add(app.state, 'tracts').name('tracts').onChange((v) => (pathways.group.visible = v));
+  loop.add(app.state, 'tracts').name('show tracts').onChange((v) => (pathways.group.visible = v));
 
-  const view = gui.addFolder('View');
+  const view = gui.addFolder('View').close();
   view.add(exploder, 'target', 0, 1, 0.01).name('explode').listen();
   view.add(app.state, 'zoom', 0.3, 3, 0.01).name('zoom').listen().onChange((v) => app.setZoom(v));
   view.add(app.state, 'labels').name('labels').listen().onChange((v) => app.setLabels(v));
@@ -36,7 +38,7 @@ export function buildGui(app) {
   view.add(app.bloom, 'strength', 0, 2.5, 0.05).name('glow');
   view.add(app.state, 'hemispheres', ['both', 'left', 'right']).name('hemisphere').onChange(() => app.applyVisibility());
 
-  const op = gui.addFolder('Opacity');
+  const op = gui.addFolder('Opacity').close();
   const opacity = { ...GROUP_OPACITY };
   const setGroupOpacity = (group, v) => {
     for (const s of atlas.structures) {
@@ -48,7 +50,7 @@ export function buildGui(app) {
   };
   const OP_LABELS = {
     shell: 'brain', cortex: 'cortex', context: 'context',
-    striatum: 'putamen', pallidum: 'pallidum', stn: 'STN', thalamus: 'VA·VL',
+    striatum: 'putamen', pallidum: 'pallidum', stn: 'STN', nigra: 'S. nigra', thalamus: 'VA·VLo',
   };
   for (const g of Object.keys(OP_LABELS)) {
     op.add(opacity, g, 0, 1, 0.01).name(OP_LABELS[g]).onChange((v) => setGroupOpacity(g, v));
@@ -60,6 +62,6 @@ export function buildGui(app) {
     vis.add(app.state.visible, base).name(name).onChange(() => app.applyVisibility());
   }
 
-  if (window.innerWidth < 900) gui.close();
+  gui.close();
   return gui;
 }

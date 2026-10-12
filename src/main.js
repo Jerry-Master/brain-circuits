@@ -11,7 +11,8 @@ import { loadAtlas, ROLES } from './brain/loadAtlas.js';
 import { applyActivation } from './brain/materials.js';
 import { Exploder } from './brain/explode.js';
 import { Pathways } from './brain/pathways.js';
-import { Sequence, TONIC, BASE_RATES, NEURON_BIAS } from './brain/sequence.js';
+import { Sequence } from './brain/sequence.js';
+import { Circuit, POPS, DT } from './model/circuit.js';
 import { NeuronView } from './neurons/neuronView.js';
 import { buildGui } from './ui/panel.js';
 import { Hud } from './ui/hud.js';
@@ -64,8 +65,18 @@ composer.addPass(new OutputPass());
 const atlas = await loadAtlas(scene);
 const exploder = new Exploder(atlas.structures);
 const pathways = new Pathways(scene, atlas);
-const sequence = new Sequence();
-const neuronView = new NeuronView(document.getElementById('neuron-view'), document.getElementById('scope'));
+const circuit = new Circuit();
+const sequence = new Sequence(circuit);
+const neuronView = new NeuronView(document.getElementById('neuron-view'), document.getElementById('scope'), circuit);
+
+// Structure glow is read from channel-A population rates: level = relative change
+// from the resting rate (excited > 0, inhibited < 0); tonic glow = absolute rate.
+const REST = { ctx: 5, d1: 1, d2: 1, gpe: 60, stn: 20, gpi: 70, vl: 12, snc: 4 };
+const STRUCT_POP = { m1: 'ctx', pmc: 'ctx', putamen: ['d1', 'd2'], gpe: 'gpe', stn: 'stn', gpi: 'gpi', va: 'vl', vl: 'vl', sn: 'snc' };
+const popRate = (k) => circuit.rate(k, 0);
+const structRate = (src) => (Array.isArray(src) ? src.reduce((s, k) => s + popRate(k), 0) / src.length : popRate(src));
+const restRate = (src) => (Array.isArray(src) ? src.reduce((s, k) => s + REST[k], 0) / src.length : REST[src]);
+const TONIC_STRUCT = new Set(['gpe', 'gpi', 'stn']);
 
 const bases = [...new Set(atlas.structures.map((s) => s.meta.base))];
 const levelTarget = Object.fromEntries(bases.map((b) => [b, 0]));
@@ -82,18 +93,17 @@ const state = {
 
 const hud = new Hud(sequence);
 function onStage(stage, index) {
-  for (const b of bases) levelTarget[b] = stage.levels[b] ?? 0;
-  pathways.setRates(stage.rates, BASE_RATES);
-  neuronView.setDrive(stage.drive, NEURON_BIAS);
   neuronView.setStage(stage.key);
   hud.showStage(stage, index);
 }
 sequence.onStage(onStage);
 
 const app = {
-  atlas, sequence, exploder, pathways, bloom, state,
+  atlas, sequence, circuit, exploder, pathways, bloom, state,
   onStagesRebuilt() {
     hud.setStages(sequence.stages, sequence.opts);
+    for (const p of ['direct', 'indirect', 'hyperdirect']) pathways.setPathwayVisible(p, !circuit.lesion[p]);
+    pathways.setPathwayVisible('dopamine', circuit.dopamine >= 0.05);
     onStage(sequence.stage, sequence.index);
   },
   setLabels(on) {
@@ -214,19 +224,34 @@ function frame(timestamp) {
   const simDt = sequence.playing ? dt * sequence.speed : 0;
   time += simDt;
 
-  const progress = sequence.update(dt);
+  // advance the spiking network by this frame's share of model time
+  const panelOpen = !panel.classList.contains('collapsed');
+  const steps = Math.round(sequence.msFor(dt) / DT);
+  for (let i = 0; i < steps; i++) {
+    circuit.step();
+    if (panelOpen) neuronView.sample();
+  }
+  const progress = sequence.sync();
   hud.update(progress, sequence.index);
 
   exploder.update(dt);
+  pathways.setRates(popRate);
   pathways.update(simDt, exploder.changed);
 
-  // activation levels -> materials
+  // activation levels -> materials, from simulated rates
   const pulse = 0.5 + 0.5 * Math.sin(time * 9);
-  const k = 1 - Math.exp(-simDt * 4);
+  const k = 1 - Math.exp(-dt * 8);
   for (const b of bases) {
+    const src = STRUCT_POP[b];
+    if (src) {
+      const r = structRate(src);
+      const r0 = restRate(src);
+      levelTarget[b] = THREE.MathUtils.clamp((r - r0) / (r0 + 6), -1, 1);
+    }
     level[b] += (levelTarget[b] - level[b]) * k;
     const mat = atlas.materials.get(b);
-    if (!mat.uniforms) applyActivation(mat, level[b], TONIC[b] ?? 0, pulse);
+    const tonic = TONIC_STRUCT.has(b) ? Math.min(1, structRate(src) / 90) : 0;
+    if (!mat.uniforms) applyActivation(mat, level[b], tonic, pulse);
   }
 
   // scale pulse + labels on the hemisphere facing the camera
@@ -246,7 +271,7 @@ function frame(timestamp) {
   composer.render();
   labelRenderer.render(scene, camera);
 
-  if (!panel.classList.contains('collapsed')) {
+  if (panelOpen) {
     neuronView.update(dt, simDt);
     neuronView.render();
   }
